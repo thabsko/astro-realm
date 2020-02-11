@@ -7,7 +7,6 @@ The telescope used to obtain the data is the incredible ALMA - <a href="https://
 
 <figure>
 <img align="middle" src="alma_datacube.png" height="300">
-  <figcaption>Fig. 1: </figcaption>
 </figure>
 
 In this project, the datacubes imaged a sample of seven radio galaxies. The milimeter/sub-milimeter data allowed us to constrain the kinematics, mass and structure of the molecular gas surrounding the galaxies. 

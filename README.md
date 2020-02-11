@@ -6,7 +6,7 @@ The module in this repostitory contains methods that I used to carry out a data 
 The telescope used to obtain the data is the incredible ALMA - <a href="https://www.almaobservatory.org/en/home/">Atacama Large Milimeter-submilimeter Array</a> located in the Chajnantor Plateau in the Chilean Andes. ALMA is an interferometer comprising 66 dishes and is a remarkable instrumental that was partly responsible for forming the black-hole image in the Event Horizon Telescope project. The telescope produces datacubes that have dimensions mapped such that (x,y,z) = (right ascension, declination, velocity). This is displayed in figure below which contains an ALMA datacube with right ascenion, declination and velocity axes. This datacube shows the merging of two stars.
 
 <figure>
-<img align="middle" src="alma_datacube.png" height="300">
+<img align="middle" src="alma_datacube.png" height="300" class="center">
 </figure>
 
 In this project, the datacubes imaged a sample of seven radio galaxies. The milimeter/sub-milimeter data allowed us to constrain the kinematics, mass and structure of the molecular gas surrounding the galaxies. 

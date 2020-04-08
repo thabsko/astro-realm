@@ -43,26 +43,21 @@ class CI_analysis:
 		"""
 		Parameters 
 		----------
-		CI_path : str 
-			Path for ALMA [CI] datacubes
+		CI_path : Path for ALMA [CI] datacubes
 
-		CI_moment0 : str
-			Filename of [CI] moment-0 map
+		CI_moment0 : Filename of [CI] moment-0 map
 
-		CI_rms : 
-			Mean RMS noise 
+		CI_rms : Mean RMS noise 
 
-		regions : 1D array
-			Names of the DS9 region files
+		regions : Names of the DS9 region files
 
-		dl : float
-			Length of distance scale bar
+		dl : Length of distance scale bar
 
-		source : str
-			Shorthand name of source
+		source : Shorthand name of source
 
-		save_path : str
-			Path for saved output
+		input_dir : Location of input files
+
+		output_dir : Location of output files
 		"""
 
 		self.CI_path = CI_path
@@ -168,10 +163,256 @@ class CI_analysis:
 	
 		pl.savefig(self.output_dir+self.source+'_CI_moment0.png')
 
+	def gauss_peak(self, x, a, wid, g_cen, cont ):
+		"""
+		Gaussian function with continuum
+		Peak flux is a fit parameter
+	
+		Parameters 
+		----------
+		x : Wavelength axis
+	
+		a : Peak flux
+	
+		wid : Full-width at Half Maximum
+	
+		g_cen : Gaussian centre
+	
+		cont : Continuum level
+	
+		Return
+		------
+		Gaussian function : 1D array
+		
+			"""
+		self.a = a
+		self.wid = wid
+		self.g_cen = g_cen
+		self.cont = cont
+
+		gauss = self.a*np.exp(-(x-self.g_cen)**2 /(2*self.wid**2))
+		return gauss + self.cont
+
+	def CI_H2_lum_mass(self, z, z_err, SdV, SdV_err, nu_obs, nu_obs_err):
+		"""
+		Calculate L_CI, M_CI, M_H2
+
+		Parameters 
+		----------
+		z : Redshift
+			
+		z_err : Redshift Error
+
+		SdV : Integrated flux in mJy
+			
+		SdV_err : Error in integrated flux
+
+		nu_obs : Observed Frequency
+
+		nu_obs_err : Observed Frequency Error
+			
+		Returns 
+		-------
+		[CI] luminosity and mass, H_2 mass
+
+		"""
+		self.z = z
+		self.z_err = z_err
+		self.SdV = SdV
+		self.SdV_err = SdV_err
+		self.nu_obs = nu_obs
+		self.nu_obs_err = nu_obs_err
+
+		Dl = (Distance(z=self.z, unit=u.Mpc, cosmology=Planck15)).value
+		X_CI = 3.e-5
+		A_10 = 7.93e-8
+		Q_10 = 0.5
+
+		L_CI = 3.25e7*self.SdV*1.e-3*Dl**2/(nu_obs**2*(1+z)**3)  # L' in K km/s pc^2
+		L_CI_err = L_CI*np.sqrt( (self.SdV_err/self.SdV)**2 + (self.nu_obs_err/self.nu_obs)**2 )
+
+		print( 'L_CI = %.2e + %.2e' %(L_CI, L_CI_err) )
+
+		T1 = 23.6		# energy above ground state for [CI](1-0)
+		T2 = 62.5		# energy above ground state for [CI](2-1)
+		T_ex = 40		# excitation temp.
+		Q_Tex = 1. + 3.*e**(-T1/T_ex) + 5.*e**(-T2/T_ex)
+		
+		M_CI = 5.706e-4*Q_Tex*(1./3)*e**(23.6/T_ex)*L_CI 	# solar masses
+
+		M_H2 = (1375.8*Dl**2*(1.e-5/X_CI)*(1.e-7/A_10)*SdV*1.e-3)/((1.+z)*Q_10) # solar masses
+
+		M_H2_err = M_H2*( (self.z_err/self.z)**2 + (self.SdV_err/self.SdV)**2 )
+
+		print( 'M_CI <= %.2e' %M_CI )
+
+		print( 'M_H2/M_sol = %.3e +/- %.3e' %(M_H2, M_H2_err) )
+		print( 'M_H2/M_sol (upper limit) <= %.3e' %M_H2 )
+
+		return M_H2
+
+	def CI_host_galaxy( self, CI_datacube, z, z_err,
+		SFR, mean, sig_rms ):
+		"""
+		Visualise narrow-band ALMA [CI] moment-0 map generated with CASA
+	
+		Parameters 
+		----------
+		CI_datacube : [CI] datacube path
+			
+		CI_moment0 : [CI] moment-0 map filename
+			
+		CI_datacube : [CI] primary-beam corrected datacube path
+	
+		z : Redshift of source
+			
+		z_err : Redshift error of source
+		
+		SFR : Star-formation rate of source 
+
+		mean : Average noise
+
+		sig_rms : rms noise 
+
+		Returns 
+		-------
+		Flux : str
+		Frequency : str
+		S/N of detection : str
+		
+		"""	
+		self.CI_datacube = CI_datacube
+		hdu = fits.open(self.CI_path+self.CI_datacube)
+		data = hdu[0].data[0,0,:,:]			#mJy/beam
+	
+		# mask host galaxy region
+		c = 50
+		for i,j in zip(range(c-2,c+2),range(c-2,c+2)):
+			data[i,j] = None
+	
+		cells = [ list(chain(*data[i:j, i:j])) for i,j in zip(range(0,100,1),	range(1,100,1)) ]
+	
+		# remove cells with NaN (masked) values
+		N = len(cells)
+	
+		remove = []
+		for i in range(N):
+			for j in range(1):
+				if isnan(cells[i][j]) == 1:
+					remove.append(i)
+	
+		cells 	= np.delete(cells, remove, axis=0)
+	
+		N 		= len(cells)
+		sum_cells = [ cells[i].sum() for i in range(N) ]
+		
+		pl.figure(figsize=(10,5))
+	
+		hist = pl.hist(sum_cells, color='blue', bins=int(len(cells)/2))
+		
+		med = np.median(hist[1])
+		std = np.std(hist[1])
+	
+		print("Median: %.2f mJy"%(med *1.e3)) 
+		print("Std Dev: %.2f mJy"%(std *1.e3))
+	
+		# Fit distribution
+		pars = Parameters()
+		pars.add_many( 
+			('g_cen', med, True, -1., 1.),
+			('a', 10., True, 0.),	
+			('wid', 0.0001, True, 0.),  	
+			('cont', 0., True, 0., 0.5 ))
+	
+		mod 	= lm.Model(self.gauss_peak) 
+		x = [ hist[1][i] + (hist[1][i+1] - hist[1][i])/2 for i in range(len(hist[0])) ]
+	
+		fit 	= mod.fit(hist[0], pars, x=x)
+		pl.plot(x, fit.best_fit, 'r--' )
+	
+		res = fit.params
+		mu =res['g_cen'].value		#Jy/beam
+	
+		moment0 = fits.open(self.CI_path+self.CI_moment0)
+		hdr = moment0[0].header
+	
+		pix_deg = abs(hdr['cdelt1'])
+		bmaj, bmin = hdr['bmaj'], hdr['bmin']
+		bmaj, bmin = bmaj*0.4/pix_deg, bmin*0.4/pix_deg		# arcsec^2
+		print('bmaj: %.2f arcsec, bmin: %.2f arcsec' %(bmaj, bmin))
+	
+		print(fit.fit_report())
+		pl.xlabel(r'Jy beam$^{-1}$')
+		pl.ylabel('N')
+		pl.savefig(self.output_dir+self.source+'_field_flux_hist.png')
+	
+		# flux of host galaxy 
+		alma_spec = np.genfromtxt(self.output_dir+self.source+'_spec_host_freq.txt')
+	
+		freq = alma_spec[:,0]	# GHz
+		flux = alma_spec[:,1]	# Jy  (flux extracted from 1 beam-sized area)
+		
+		M = len(freq)
+	
+		freq_e = 491.161
+		v_radio = [ c*(1. - freq[i]/freq_e) for i in range(M) ] 
+	
+		freq_o = freq_e/(1.+z)			# frequency at the systemic redshift (	from HeII)
+		freq_o_err = freq_o*( z_err/z )
+		vel0 = c*(1 - freq_o/freq_e)	# systemic velocity
+	
+		voff = [ v_radio[i] - vel0 for i in range(M) ]	# offset from systemic 	velocity
+		
+		# get indices for data between -25 and 25 km/s
+		flux_sub = [ flux[i] for i in range(M) if (voff[i] < 80. and voff[i] > 80) ]
+		flux_sub = np.array(flux_sub)
+	
+		# host galaxy detection above flux noise (field)
+		sigma, sigma_err = res['wid'].value, res['wid'].stderr
+	
+		freq_host = freq_e/(1+z)
+		freq_host_err = (z_err/z)*freq_host
+	
+		SdV = 3.*sig_rms*1.e3*100.										# flux 	in mJy km/s 
+		M_H2 = self.CI_H2_lum_mass(z, z_err, SdV, 0., freq_o, freq_o_err)	# H_2 	mass in solar masses
+		tau_depl = M_H2/SFR  	#depletion time-scale in yr
+	
+		print("tau_depl. = %.2f" %(tau_depl/1.e6))	#depletion time-scale in Myr
+		print(r'SdV = %.2f mJy.km/s' %SdV)		
+		print('M_H2/M_sol < %.2e' %M_H2) 	
+		print(r'Frequency of host galaxy: $\nu$ =  %.2f +/- %.2f' %(freq_host, freq_host_err))
+ 	
+		return [ mu*1.e3, sigma*1.e3 ]
+
+
 class HeII_analysis:
 
 	def __init__( self,  dec, ra, size, lam1, lam2, muse_file, 
 		p, wav_em, source, output_dir ):
+		"""
+		Parameters 
+		----------
+		dec : Declination (pixel) of aperture centre
+		
+		ra : Right Ascension (pixel) of aperture centre
+
+		size : Radius of aperture 
+
+		lam1 : Lower wavelength
+
+		lam2 : Upper wavelength
+
+		muse_file : MUSE datacube path
+
+		p : Initial parameters for line-fit
+
+		wav_em : Rest wavelength of line
+
+		source : Source name
+
+		output_dir : Location of output files
+
+		""" 
 		self.dec = dec
 		self.ra = ra
 		self.size = size
@@ -185,31 +426,26 @@ class HeII_analysis:
 
 		self.c = 2.9979245800e5 		#speed of light in km/s
 
-	def gauss1( self, x, amp, wid, g_cen, cont ):
+	def gauss_int( self, x, amp, wid, g_cen, cont ):
 		"""
 		Gaussian function with continuum
 		Integrated flux is a fit parameter
 	
 		Parameters 
 		----------
-		x : array
-			Wavelength axis
+		x : Wavelength axis
 	
-		amp : float
-			Integrated flux
+		amp : Integrated flux
 	
-		wid : float
-			FWHM
+		wid : Full-width at Half-Maximum
 	
-		g_cen : float
-			Gaussian centre
+		g_cen : Gaussian centre
 	
-		cont : float
-			Continuum value
+		cont : Continuum level
 	
 		Return
 		------
-		Gaussian function : 1d array
+		Gaussian function : 1D array
 	
 		"""
 		self.amp = amp
@@ -251,41 +487,31 @@ class HeII_analysis:
 	
 		Parameters 
 		----------
-		y : float
-			DEC (pixel) of aperture centre for extracted MUSE spectrum
+		y : Declination (pixel) of aperture centre 
 	
-		x : float
-			RA (pixel) of aperture centre for extracted MUSE spectrum
+		x : Right Ascension (pixel) of aperture centre 
 	
-		size : float
-			Radius of aperture for extracted MUSE spectrum
+		size : Radius of aperture for extracted MUSE spectrum
 	
-		lam1 : float
-			Wavelength (Angstroms) at the lower-end of spectral range 
+		lam1 : Wavelength (Angstroms) at the lower-end of spectral range 
 			of the subcube
 	
-		lam2 : float
-			Wavelength (Angstroms) at the upper-end of spectral range 
+		lam2 : Wavelength (Angstroms) at the upper-end of spectral range 
 			of the subcube
 	
-		muse_file : str
-			Path and filename of MUSE datacube
+		muse_file : Path and filename of MUSE datacube
 	
-		p : 1d array
-			Initial guesses for fit parameters
+		p : Initial guesses for fit parameters
 	
-		wav_em : float 
-			Rest wavelength of HeII 1640
+		wav_em : Rest wavelength of HeII 1640
 	
-		source : str
-			Name of source
+		source : Name of source
 	
-		save_path : str
-			Path for saved output
+		save_path : Path for saved output
 
 		Returns 
 		-------
-		Systemic redshift of the galaxy and its velocity : 1d array
+		Systemic redshift of the galaxy and its velocity : 1D array
 		
 		"""
 		muse_cube = mpdo.Cube(self.muse_file, ext=1)
@@ -308,7 +534,7 @@ class HeII_analysis:
 			('wid', self.p[2], True, 0.),  	#GHz
 			('cont', self.p[3], True ))
 		
-		mod 	= lm.Model(self.gauss1) 
+		mod 	= lm.Model(self.gauss_int) 
 		fit 	= mod.fit(flux, pars, x=wav)
 	
 		res = fit.params
@@ -327,7 +553,7 @@ class HeII_analysis:
 	
 		vel_arr = [ self.wav_to_vel( wav[i], self.wav_em, z ) for i in range(len(wav)) 	] # at z=z_sys
 	
-		pl.plot(vel_arr, self.gauss1(wav, res['amp'], res['wid'], 
+		pl.plot(vel_arr, self.gauss_int(wav, res['amp'], res['wid'], 
 			res['g_cen'], res['cont']), c='red')
 		pl.plot(vel_arr, flux, c='k', drawstyle='steps-mid')
 		pl.xlim([-1500,1500])
@@ -336,5 +562,5 @@ class HeII_analysis:
 	
 		pl.savefig(self.output_dir+self.source+'_HeII.png')
 	
-		print( "Systemic redshift ("+source+"): %.4f +/- %.4f " %( z, z_err ) 	)
+		print( "Systemic redshift ("+self.source+"): %.4f +/- %.4f " %( z, z_err ) 	)
 		return [z, z_err, vel_glx]

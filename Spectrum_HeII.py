@@ -10,16 +10,17 @@ import mpdaf.obj as mpdo
 from lmfit import *
 import lmfit.models as lm
 
+from Gaussians import *
+
 import warnings
 from astropy.utils.exceptions import AstropyWarning
 warnings.filterwarnings('ignore', category=UserWarning, append=True)
 warnings.simplefilter  ('ignore', category=AstropyWarning         )
 
 
-class HeII_analysis:
+class Spectrum_HeII:
 
-	def __init__( self,  dec, ra, size, lam1, lam2, muse_file, 
-		p, wav_em, source, output_dir ):
+	def __init__( self, source, output_dir ):
 		"""
 		Parameters 
 		----------
@@ -44,51 +45,13 @@ class HeII_analysis:
 		output_dir : Location of output files
 
 		""" 
-		self.dec = dec
-		self.ra = ra
-		self.size = size
-		self.lam1 = lam1
-		self.lam2 = lam2
-		self.muse_file = muse_file
-		self.p = p
-		self.wav_em = wav_em
+	
 		self.source = source
 		self.output_dir = output_dir
+		self.c = 2.9979245800e5 	#speed of light in km/s
+		self.freq_e = 492.161		#rest frequency of [CI](1-0) in GHz
 
-		self.c = 2.9979245800e5 		#speed of light in km/s
-
-	def gauss_int( self, x, amp, wid, g_cen, cont ):
-		"""
-		Gaussian function with continuum
-		Integrated flux is a fit parameter
-	
-		Parameters 
-		----------
-		x : Wavelength axis
-	
-		amp : Integrated flux
-	
-		wid : Full-width at Half-Maximum
-	
-		g_cen : Gaussian centre
-	
-		cont : Continuum level
-	
-		Return
-		------
-		Gaussian function : 1D array
-	
-		"""
-		self.amp = amp
-		self.wid = wid
-		self.g_cen = g_cen
-		self.cont = cont
-
-		gauss = (self.amp/np.sqrt(2.*np.pi)/self.wid) * np.exp(-(x-self.g_cen)**2 /(2.*self.wid**2))
-
-		return gauss + self.cont
-
-	def wav_to_vel( self, wav_obs, wav_em, z ):
+	def convert_wav_to_vel( self, wav_obs, wav_em, z ):
 		"""
 		Convert an observed wavelength to a velocity 
 		in the observer-frame at redshift
@@ -109,42 +72,63 @@ class HeII_analysis:
 		self.wav_obs = wav_obs
 		self.wav_em = wav_em
 		self.z = z
+
 		v = self.c*((self.wav_obs/self.wav_em/(1.+self.z)) - 1.)
 		return v
 
-	def muse_redshift( self ):
+	def get_redshift( self, dec, ra, size, lam1, lam2, muse_file, 
+		p, wav_em ):
 		"""
 		Calculate the systemic redshift from a line in the MUSE spectrum
-	
+
 		Parameters 
 		----------
-		y : Declination (pixel) of aperture centre 
-	
-		x : Right Ascension (pixel) of aperture centre 
-	
-		size : Radius of aperture for extracted MUSE spectrum
-	
-		lam1 : Wavelength (Angstroms) at the lower-end of spectral range 
+		y : float
+			DEC (pixel) of aperture centre for extracted MUSE spectrum
+
+		x : float
+			RA (pixel) of aperture centre for extracted MUSE spectrum
+
+		size : float
+			Radius of aperture for extracted MUSE spectrum
+
+		lam1 : float
+			Wavelength (Angstroms) at the lower-end of spectral range 
 			of the subcube
-	
-		lam2 : Wavelength (Angstroms) at the upper-end of spectral range 
+
+		lam2 : float
+			Wavelength (Angstroms) at the upper-end of spectral range 
 			of the subcube
-	
-		muse_file : Path and filename of MUSE datacube
-	
-		p : Initial guesses for fit parameters
-	
-		wav_em : Rest wavelength of HeII 1640
-	
-		source : Name of source
-	
-		save_path : Path for saved output
+
+		muse_file : str
+			Path and filename of MUSE datacube
+
+		p : 1d array
+			Initial guesses for fit parameters
+
+		wav_em : float 
+			Rest wavelength of HeII 1640
+
+		source : str
+			Name of source
+
+		save_path : str
+			Path for saved output
 
 		Returns 
 		-------
-		Systemic redshift of the galaxy and its velocity : 1D array
+		Systemic redshift of the galaxy and its velocity : 1d array
 		
 		"""
+		self.dec = dec
+		self.ra = ra
+		self.size = size
+		self.lam1 = lam1
+		self.lam2 = lam2
+		self.muse_file = muse_file
+		self.p = p
+		self.wav_em = wav_em
+
 		muse_cube = mpdo.Cube(self.muse_file, ext=1)
 		
 		m1,m2 	= muse_cube.sum(axis=(1,2)).wave.pixel([self.lam1,self.lam2], nearest=True) 
@@ -165,7 +149,7 @@ class HeII_analysis:
 			('wid', self.p[2], True, 0.),  	#GHz
 			('cont', self.p[3], True ))
 		
-		mod 	= lm.Model(self.gauss_int) 
+		mod 	= lm.Model(Gaussians.gauss_int) 
 		fit 	= mod.fit(flux, pars, x=wav)
 	
 		res = fit.params
@@ -182,17 +166,14 @@ class HeII_analysis:
 
 		vel_glx = self.c*z					#velocity (ref frame of observer)
 	
-		vel_arr = [ self.wav_to_vel( wav[i], self.wav_em, z ) for i in range(len(wav)) 	] # at z=z_sys
+		vel_arr = [ self.convert_wav_to_vel( wav[i], self.wav_em, z ) for i in range(len(wav)) 	] # at z=z_sys
 	
-		pl.plot(vel_arr, self.gauss_int(wav, res['amp'], res['wid'], 
+		pl.plot(vel_arr, Gaussians.gauss_int(wav, res['amp'], res['wid'], 
 			res['g_cen'], res['cont']), c='red')
 		pl.plot(vel_arr, flux, c='k', drawstyle='steps-mid')
 		pl.xlim([-1500,1500])
 		pl.xlabel(r'$\Delta v$ (km s$^{-1}$)', fontsize=12)
 		pl.ylabel(r'F$_\lambda$ / $10^{-20}$ erg s$^{-1}$ $\AA^{-1}$ 	cm$^{-2}$', fontsize=12)
-	
-		# if source=='TNJ1338':
-		# 	pl.ylim(-100, 40.)
 	
 		pl.savefig(self.output_dir+self.source+'_HeII.png')
 	

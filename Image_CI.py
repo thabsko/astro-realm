@@ -63,7 +63,6 @@ class Image_CI:
 
 		source : Short-hand source name
 
-
 		Returns 
 		-------
 		Moment-0 map : image
@@ -220,7 +219,6 @@ class Image_CI:
 		z_err : Source redshift error 
 
 		input_dir : Location of input files
-
 
 		Returns 
 		-------

@@ -102,7 +102,6 @@ class Spectrum_CI:
 
 		freq_obs_mto : 	Upper and lower frequency limits 
 						of moment-0 maps
-	
 		Returns 
 		-------
 		[CI] spectra : image

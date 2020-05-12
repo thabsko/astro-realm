@@ -29,13 +29,15 @@ class Image_CI:
 	
 	def __init__( self, CI_path, input_dir, output_dir ):
 		"""
+
 		Parameters 
 		----------
+
 		CI_path : Path for ALMA [CI] datacubes
 
-		input_dir : 
+		input_dir : Directory of input files
 
-		output_dir : 
+		output_dir : Directory of output files
 
 		"""
 
@@ -46,15 +48,25 @@ class Image_CI:
 	def make_narrow_band( self, CI_moment0, 
 		CI_rms, regions, dl, source ):
 		"""
-		Visualise narrow-band ALMA [CI] moment-0 map generated with CASA. 
+		Show narrow-band ALMA [CI] moment-0 map 
 
 		Parameters 
 		----------
-		
+
+		CI_moment0 : [CI] moment-0 map filename
+
+		CI_rms : Minimum threshold value of [CI] contours
+
+		regions : Region names for detections
+
+		dl : Distance-scale bar length (in pixels)
+
+		source : Short-hand source name
+
 
 		Returns 
 		-------
-		Saved image of moment-0 map  
+		Moment-0 map : image
 		
 		"""
 		# Moment-0 map from CASA
@@ -201,11 +213,11 @@ class Image_CI:
 
 		CI_rms : Mean RMS noise 
 
-		s : SFR 
+		s : SFR and uncertainties
 
-		z : Redshift of source
-			
-		z_err : Redshift error of source
+		z : Source redshift
+
+		z_err : Source redshift error 
 
 		input_dir : Location of input files
 
@@ -297,14 +309,11 @@ class Image_CI:
 	
 		Parameters 
 		----------
-		CI_path : str 
-			Path for ALMA [CI] datacubes
+		CI_path : Path for ALMA [CI] datacubes
 	
-		CI_moment0 : str
-			Filename of [CI] moment-0 map
+		CI_moment0 : [CI] moment-0 map filename
 	
-		CI_rms : float
-			Minimum threshold value of [CI] contours
+		CI_rms : Minimum threshold value of [CI] contours
 	
 		Return
 		------

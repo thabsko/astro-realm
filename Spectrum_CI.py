@@ -13,6 +13,15 @@ import pickle
 class Spectrum_CI:
 
 	def __init__( self, input_dir, output_dir  ):
+		"""
+		Parameters 
+		----------
+
+		input_dir : Directory of input files
+
+		output_dir : Directory of output files
+
+		"""
 
 		self.input_dir = input_dir	
 		self.output_dir = output_dir
@@ -72,7 +81,6 @@ class Spectrum_CI:
 	
 	def make_spectrum( self, CI_path, CI_moment0, CI_region, source, p, z,
 	 z_err, freq_obs_mt0 ):
-		#path_muse, muse_cube, freq_e, z, z_err, mu, sig_rms, source, output_dir
 		"""
 		Show [CI] line spectra and line-fits
 	
@@ -88,11 +96,12 @@ class Spectrum_CI:
 
 		p : Initial parameters for line-fit
 
-		z : 
+		z : Source redshift
 
-		z_err : 
+		z_err : Source redshift error 
 
-		freq_obs_mto : 
+		freq_obs_mto : 	Upper and lower frequency limits 
+						of moment-0 maps
 	
 		Returns 
 		-------

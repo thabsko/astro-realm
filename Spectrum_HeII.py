@@ -24,25 +24,10 @@ class Spectrum_HeII:
 		"""
 		Parameters 
 		----------
-		dec : Declination (pixel) of aperture centre
-		
-		ra : Right Ascension (pixel) of aperture centre
-
-		size : Radius of aperture 
-
-		lam1 : Lower wavelength
-
-		lam2 : Upper wavelength
-
-		muse_file : MUSE datacube path
-
-		p : Initial parameters for line-fit
-
-		wav_em : Rest wavelength of line
 
 		source : Source name
 
-		output_dir : Location of output files
+		output_dir : Directory of input files
 
 		""" 
 	
@@ -83,31 +68,24 @@ class Spectrum_HeII:
 
 		Parameters 
 		----------
-		y : float
-			DEC (pixel) of aperture centre for extracted MUSE spectrum
 
-		x : float
-			RA (pixel) of aperture centre for extracted MUSE spectrum
+		dec : DEC (pixel) of aperture centre for extracted MUSE spectrum
 
-		size : float
-			Radius of aperture for extracted MUSE spectrum
+		ra : RA (pixel) of aperture centre for extracted MUSE spectrum
 
-		lam1 : float
-			Wavelength (Angstroms) at the lower-end of spectral range 
+		size : Radius of aperture for extracted MUSE spectrum
+
+		lam1 : Wavelength (Angstroms) at the lower-end of spectral range 
 			of the subcube
 
-		lam2 : float
-			Wavelength (Angstroms) at the upper-end of spectral range 
+		lam2 : Wavelength (Angstroms) at the upper-end of spectral range 
 			of the subcube
 
-		muse_file : str
-			Path and filename of MUSE datacube
+		muse_file : Path and filename of MUSE datacube
 
-		p : 1d array
-			Initial guesses for fit parameters
+		p : Initial guesses for fit parameters
 
-		wav_em : float 
-			Rest wavelength of HeII 1640
+		wav_em : Rest wavelength of HeII 1640
 
 		source : str
 			Name of source

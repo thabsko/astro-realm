@@ -48,9 +48,9 @@ class Multiwavelength_Image(object):
 		vla_hdr 	= vla_hdu.header
 		vla_data 	= vla_hdu.data[0,0,:,:]
 		
-		w 			= WCS(vla_hdr)
+		w = WCS(vla_hdr)
 
-		vla_wcs     = w.celestial
+		vla_wcs = w.celestial
 		
 		#VLA contour levels
 		n_contours = 6		
@@ -83,7 +83,7 @@ class Multiwavelength_Image(object):
 	
 		#MUSE Lya contour levels
 		n_contours = 6	
-		n 		   = 1	
+		n = 1	
 			
 		contours    = np.zeros(n_contours)
 		contours[0] = muse_rms

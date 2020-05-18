@@ -6,7 +6,6 @@ ESO (2019)
 
 import numpy as np
 
-
 class Gaussians(object):
 
 	def gauss_peak( x, a, wid, g_cen, cont ):
@@ -28,9 +27,9 @@ class Gaussians(object):
 	
 		Return
 		------
-		Gaussian function : 1D array
+		Ordinate : list
 		
-			"""
+		"""
 		gauss = a*np.exp(-(x-g_cen)**2 /(2*wid**2))
 		return gauss + cont
 
@@ -53,10 +52,9 @@ class Gaussians(object):
 	
 		Return
 		------
-		Gaussian function : 1D array
-	
+		Ordinate : list
+
 		"""
 
 		gauss = (amp/np.sqrt(2.*np.pi)/wid) * np.exp(-(x-g_cen)**2 /(2.*wid**2))
-
 		return gauss + cont

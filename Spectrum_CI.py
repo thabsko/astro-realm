@@ -20,11 +20,19 @@ import pickle
 class Spectrum_CI(object):
 
 	def __init__( self, input_dir, output_dir  ):
+		"""
+		input_dir : Directory of input files
+
+		output_dir : Directory of output files
+
+		c : light-speed
+
+		"""
 
 		self.input_dir = input_dir	
 		self.output_dir = output_dir
 
-		self.c = 2.9979245800e5 	#speed of light in km/s
+		self.c = 2.9979245800e5 	# in km/s
 
 	def freq_to_vel( self, freq_obs, freq_em, z ):
 		"""
@@ -79,7 +87,6 @@ class Spectrum_CI(object):
 	
 	def make_spectrum( self, CI_path, CI_moment0, CI_region, source, p, z,
 	 z_err, freq_obs_mt0 ):
-		#path_muse, muse_cube, freq_e, z, z_err, mu, sig_rms, source, output_dir
 		"""
 		Show [CI] line spectra and line-fits
 	
@@ -95,11 +102,11 @@ class Spectrum_CI(object):
 
 		p : Initial parameters for line-fit
 
-		z : 
+		z : Redshift
 
-		z_err : 
+		z_err : Redshift error
 
-		freq_obs_mto : 
+		freq_obs_mto : Observed frequency range of [CI] moment-0 map
 	
 		Returns 
 		-------

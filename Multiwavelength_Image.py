@@ -29,7 +29,7 @@ class Multiwavelength_Image(object):
 
 		Parameters 
 		----------
-		vla_path : Path for ALMA [CI] datacubes
+		vla_path : Path of ALMA [CI] datacubes
 
 		vla_img : Filename of VLA image
 
@@ -97,7 +97,7 @@ class Multiwavelength_Image(object):
 
 		Parameters 
 		----------
-		irac_path : Path for IRAC path
+		irac_path : Path of IRAC path
 
 		irac_img : Filename of IRAC image
 
@@ -136,19 +136,19 @@ class Multiwavelength_Image(object):
 
 		Parameters 
 		----------
-		vla_path : Path for VLA image
+		vla_path : Path of VLA image
 
 		vla_img : VLA  image name
 
 		vla_rms : Minimum threshold value of VLA contours
 		
-		CI_path : Path for [CI] moment-0 map
+		CI_path : Path of [CI] moment-0 map
 
 		CI_moment0 : Filename of moment-0 map
 
 		CI_rms : Minimum threshold value of [CI] contours
 
-		hst_path : Path for HST data
+		hst_path : Path of HST data
 
 		hst_img : Filename of HST image
 
@@ -226,19 +226,19 @@ class Multiwavelength_Image(object):
 
 		Parameters 
 		----------
-		vla_path : Path for VLA image
+		vla_path : Path of VLA image
 
 		vla_img : Filename of VLA image
 
 		vla_rms : Minimum threshold of VLA contours
 
-		CI_path : Path for [CI] moment-0 map
+		CI_path : Path of [CI] moment-0 map
 
 		CI_moment0 : Filename of moment-0 map
 
 		CI_rms : Minimum threshold of [CI] contours
 		
-		irac_path : Path for IRAC image
+		irac_path : Path of IRAC image
 		
 		irac_img : IRAC image name
 
@@ -350,7 +350,7 @@ class Multiwavelength_Image(object):
 
 		irac_rms : Minimum threshold of IRAC rms
 
-		CI_path : Path for ALMA [CI] datacubes
+		CI_path : Path of ALMA [CI] datacubes
 
 		CI_moment0 : Filename of [CI] moment-0 map
 
@@ -454,11 +454,11 @@ class Multiwavelength_Image(object):
 		----------
 		Lya_subcubce : Filename of Ly-alpha subcube 
 
-		vla_path : Path for VLA image
+		vla_path : Path of VLA image
 		
 		vla_img : Filename for VLA image
 
-		CI_path : Path for [CI] moment-0 map
+		CI_path : Path of [CI] moment-0 map
 
 		CI_moment0 : Filename for [CI] moment-0 maps
 
@@ -468,7 +468,7 @@ class Multiwavelength_Image(object):
 
 		lam2 : Upper wavelength limit of Lya narrow band image
 
-		output_dir : Path for saved output
+		output_dir : Path of saved output
 
 		Return
 		------
@@ -539,7 +539,7 @@ class Multiwavelength_Image(object):
 
 		Parameters 
 		----------
-		muse path : Path for MUSE cube
+		muse path : Path of MUSE cube
 
 		muse_cube : Filename for MUSE datacube 
 

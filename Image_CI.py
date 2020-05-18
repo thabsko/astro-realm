@@ -34,11 +34,11 @@ class Image_CI(object):
 		"""
 		Parameters 
 		----------
-		CI_path : Path for ALMA [CI] datacubes
+		CI_path : Path of ALMA [CI] datacubes
 
-		input_dir : Location of input files
+		input_dir : Directory of input files
 
-		output_dir : Location of output files
+		output_dir : Directory of output files
 
 		"""
 
@@ -53,11 +53,20 @@ class Image_CI(object):
 
 		Parameters 
 		----------
+		CI_moment0 : [CI] moment-0 map 
+
+		CI_rms : Minimum threshold value of [CI] contours
+
+		regions : Region names 
+
+		dl : Length of distance scale bar
+
+		source : Source name
 		
 
 		Returns 
 		-------
-		Saved image of moment-0 map  
+		Moment-0 map : image
 		
 		"""
 		# Moment-0 map from CASA
@@ -200,17 +209,17 @@ class Image_CI(object):
 			
 		CI_datacube : [CI] primary-beam corrected datacube
 	
-		source : Target
+		source : Source name
 
-		CI_rms : Mean RMS noise 
+		CI_rms : Minimum threshold value of [CI] contours
 
-		s : SFR 
+		s : SFR and SFR error
 
 		z : Redshift of source
 			
 		z_err : Redshift error of source
 
-		input_dir : Location of input files
+		input_dir : Directory of input files
 
 
 		Returns 
@@ -300,14 +309,11 @@ class Image_CI(object):
 	
 		Parameters 
 		----------
-		CI_path : str 
-			Path for ALMA [CI] datacubes
+		CI_path : Path of ALMA [CI] datacubes
 	
-		CI_moment0 : str
-			Filename of [CI] moment-0 map
+		CI_moment0 : [CI] moment-0 map 
 	
-		CI_rms : float
-			Minimum threshold value of [CI] contours
+		CI_rms : Minimum threshold value of [CI] contours
 	
 		Return
 		------

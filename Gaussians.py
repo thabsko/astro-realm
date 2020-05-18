@@ -1,8 +1,13 @@
+"""
+S.N. Kolwa
+ESO (2019) 
+
+"""
+
 import numpy as np
 
 
-
-class Gaussians:
+class Gaussians(object):
 
 	def gauss_peak( x, a, wid, g_cen, cont ):
 		"""
@@ -55,5 +60,3 @@ class Gaussians:
 		gauss = (amp/np.sqrt(2.*np.pi)/wid) * np.exp(-(x-g_cen)**2 /(2.*wid**2))
 
 		return gauss + cont
-
- 

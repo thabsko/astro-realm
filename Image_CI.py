@@ -1,5 +1,8 @@
-# S.N. Kolwa 
-# ESO (2019)
+"""
+S.N. Kolwa
+ESO (2019) 
+
+"""
 
 from astropy.io import fits
 import numpy as np
@@ -25,19 +28,17 @@ warnings.filterwarnings('ignore', category=UserWarning, append=True)
 warnings.simplefilter  ('ignore', category=AstropyWarning)
 
 
-class Image_CI:
+class Image_CI(object):
 	
 	def __init__( self, CI_path, input_dir, output_dir ):
 		"""
-
 		Parameters 
 		----------
-
 		CI_path : Path for ALMA [CI] datacubes
 
-		input_dir : Directory of input files
+		input_dir : Location of input files
 
-		output_dir : Directory of output files
+		output_dir : Location of output files
 
 		"""
 
@@ -48,24 +49,15 @@ class Image_CI:
 	def make_narrow_band( self, CI_moment0, 
 		CI_rms, regions, dl, source ):
 		"""
-		Show narrow-band ALMA [CI] moment-0 map 
+		Visualise narrow-band ALMA [CI] moment-0 map generated with CASA. 
 
 		Parameters 
 		----------
-
-		CI_moment0 : [CI] moment-0 map filename
-
-		CI_rms : Minimum threshold value of [CI] contours
-
-		regions : Region names for detections
-
-		dl : Distance-scale bar length (in pixels)
-
-		source : Short-hand source name
+		
 
 		Returns 
 		-------
-		Moment-0 map : image
+		Saved image of moment-0 map  
 		
 		"""
 		# Moment-0 map from CASA
@@ -212,13 +204,14 @@ class Image_CI:
 
 		CI_rms : Mean RMS noise 
 
-		s : SFR and uncertainties
+		s : SFR 
 
-		z : Source redshift
-
-		z_err : Source redshift error 
+		z : Redshift of source
+			
+		z_err : Redshift error of source
 
 		input_dir : Location of input files
+
 
 		Returns 
 		-------
@@ -307,11 +300,14 @@ class Image_CI:
 	
 		Parameters 
 		----------
-		CI_path : Path for ALMA [CI] datacubes
+		CI_path : str 
+			Path for ALMA [CI] datacubes
 	
-		CI_moment0 : [CI] moment-0 map filename
+		CI_moment0 : str
+			Filename of [CI] moment-0 map
 	
-		CI_rms : Minimum threshold value of [CI] contours
+		CI_rms : float
+			Minimum threshold value of [CI] contours
 	
 		Return
 		------
@@ -337,3 +333,4 @@ class Image_CI:
 			n			+= 1
 	
 		return [ CI_img_arr, CI_new_wcs, contours ]
+

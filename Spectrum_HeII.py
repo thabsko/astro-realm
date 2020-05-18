@@ -1,5 +1,8 @@
-# S.N. Kolwa 
-# ESO (2019)
+"""
+S.N. Kolwa
+ESO (2019) 
+
+"""
 
 import numpy as np
 import matplotlib.pyplot as pl
@@ -10,7 +13,7 @@ import mpdaf.obj as mpdo
 from lmfit import *
 import lmfit.models as lm
 
-from Gaussians import *
+from Gaussians import * 
 
 import warnings
 from astropy.utils.exceptions import AstropyWarning
@@ -18,16 +21,31 @@ warnings.filterwarnings('ignore', category=UserWarning, append=True)
 warnings.simplefilter  ('ignore', category=AstropyWarning         )
 
 
-class Spectrum_HeII:
+class Spectrum_HeII(object):
 
 	def __init__( self, source, output_dir ):
 		"""
 		Parameters 
 		----------
+		dec : Declination (pixel) of aperture centre
+		
+		ra : Right Ascension (pixel) of aperture centre
+
+		size : Radius of aperture 
+
+		lam1 : Lower wavelength
+
+		lam2 : Upper wavelength
+
+		muse_file : MUSE datacube path
+
+		p : Initial parameters for line-fit
+
+		wav_em : Rest wavelength of line
 
 		source : Source name
 
-		output_dir : Directory of input files
+		output_dir : Location of output files
 
 		""" 
 	
@@ -68,24 +86,31 @@ class Spectrum_HeII:
 
 		Parameters 
 		----------
+		y : float
+			DEC (pixel) of aperture centre for extracted MUSE spectrum
 
-		dec : DEC (pixel) of aperture centre for extracted MUSE spectrum
+		x : float
+			RA (pixel) of aperture centre for extracted MUSE spectrum
 
-		ra : RA (pixel) of aperture centre for extracted MUSE spectrum
+		size : float
+			Radius of aperture for extracted MUSE spectrum
 
-		size : Radius of aperture for extracted MUSE spectrum
-
-		lam1 : Wavelength (Angstroms) at the lower-end of spectral range 
+		lam1 : float
+			Wavelength (Angstroms) at the lower-end of spectral range 
 			of the subcube
 
-		lam2 : Wavelength (Angstroms) at the upper-end of spectral range 
+		lam2 : float
+			Wavelength (Angstroms) at the upper-end of spectral range 
 			of the subcube
 
-		muse_file : Path and filename of MUSE datacube
+		muse_file : str
+			Path and filename of MUSE datacube
 
-		p : Initial guesses for fit parameters
+		p : 1d array
+			Initial guesses for fit parameters
 
-		wav_em : Rest wavelength of HeII 1640
+		wav_em : float 
+			Rest wavelength of HeII 1640
 
 		source : str
 			Name of source
@@ -157,3 +182,4 @@ class Spectrum_HeII:
 	
 		print( "Systemic redshift ("+self.source+"): %.4f +/- %.4f " %( z, z_err ) 	)
 		return [z, z_err, vel_glx]
+

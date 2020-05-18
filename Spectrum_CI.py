@@ -1,3 +1,9 @@
+"""
+S.N. Kolwa
+ESO (2019) 
+
+"""
+
 from astropy.io import fits
 import numpy as np
 
@@ -5,23 +11,15 @@ import matplotlib.pyplot as pl
 from lmfit import *
 import lmfit.models as lm
 
-from Gaussians import *
+from Gaussians import * 
 from Image_CI import *
 
 import pickle
 
-class Spectrum_CI:
+
+class Spectrum_CI(object):
 
 	def __init__( self, input_dir, output_dir  ):
-		"""
-		Parameters 
-		----------
-
-		input_dir : Directory of input files
-
-		output_dir : Directory of output files
-
-		"""
 
 		self.input_dir = input_dir	
 		self.output_dir = output_dir
@@ -81,6 +79,7 @@ class Spectrum_CI:
 	
 	def make_spectrum( self, CI_path, CI_moment0, CI_region, source, p, z,
 	 z_err, freq_obs_mt0 ):
+		#path_muse, muse_cube, freq_e, z, z_err, mu, sig_rms, source, output_dir
 		"""
 		Show [CI] line spectra and line-fits
 	
@@ -96,12 +95,12 @@ class Spectrum_CI:
 
 		p : Initial parameters for line-fit
 
-		z : Source redshift
+		z : 
 
-		z_err : Source redshift error 
+		z_err : 
 
-		freq_obs_mto : 	Upper and lower frequency limits 
-						of moment-0 maps
+		freq_obs_mto : 
+	
 		Returns 
 		-------
 		[CI] spectra : image
@@ -124,8 +123,6 @@ class Spectrum_CI:
 		bmaj, bmin, bpa = hdr['bmaj'], hdr['bmin'], hdr['bpa']  # bmaj, bmin in degrees
 	
 		for spec in CI_region:
-			print(spec)
-	
 			# 20 km/s binned 1D spectrum
 			alma_spec = np.genfromtxt('../../'+source+'_files/in/'+source+'_spec_'+spec+'_freq.txt')
 	
@@ -501,3 +498,4 @@ class Spectrum_CI:
 			pl.xlabel(r'$\Delta v$ (km s$^{-1}$)', fontsize=fs)
 			pl.savefig(self.output_dir+'TNJ1338_CI_spectrums.png', bbox_inches = 'tight',
 				pad_inches = 0.1)
+	

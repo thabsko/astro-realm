@@ -20,6 +20,10 @@ from Image_CI import *
 class Multiwavelength_Image(object):
 
 	def __init__( self, output_dir ):
+		"""
+		output_dir : Directory of output files
+		
+		"""
 		self.output_dir = output_dir
 
 	def VLA_contours( self, vla_path, vla_img, vla_rms ):

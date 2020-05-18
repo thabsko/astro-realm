@@ -22,7 +22,7 @@ class Multiwavelength_Image(object):
 	def __init__( self, output_dir ):
 		"""
 		output_dir : Directory of output files
-		
+
 		"""
 		self.output_dir = output_dir
 
@@ -53,8 +53,8 @@ class Multiwavelength_Image(object):
 		vla_wcs     = w.celestial
 		
 		#VLA contour levels
-		n_contours 		=	6		
-		contours 		= [ vla_rms ]
+		n_contours = 6		
+		contours   = [ vla_rms ]
 		
 		for i in range(n_contours):
 			contours.append( contours[i]*(np.sqrt(2))*2 )
@@ -82,15 +82,15 @@ class Multiwavelength_Image(object):
 		muse_data = muse_hdu[1].data[:,:]
 	
 		#MUSE Lya contour levels
-		n_contours 		= 6	
-		n 				= 1	
+		n_contours = 6	
+		n 		   = 1	
 			
-		contours 		= np.zeros(n_contours)
-		contours[0] 	= muse_rms
+		contours    = np.zeros(n_contours)
+		contours[0] = muse_rms
 		
 		for i in range(1, n_contours):
 			contours[i] = muse_rms*np.sqrt(2)*n
-			n			+= 2
+			n += 2
 	
 		return [muse_data, muse_wcs, contours]
 	
@@ -121,14 +121,14 @@ class Multiwavelength_Image(object):
 		irac_data = irac_hdu[0].data[:,:]
 			
 		#IRAC contour levels 
-		n 				=   1		
+		n = 1		
 			
 		contours 		= np.zeros(n_contours)
 		contours[0] 	= irac_rms
 		
 		for i in range(1, n_contours):
 			contours[i] = contours[0]*np.sqrt(2)*n
-			n			+= 1
+			n += 1
 
 		return [irac_data, irac_wcs, contours]
 	

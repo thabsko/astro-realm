@@ -123,8 +123,8 @@ class Multiwavelength_Image(object):
 		#IRAC contour levels 
 		n = 1		
 			
-		contours 		= np.zeros(n_contours)
-		contours[0] 	= irac_rms
+		contours    = np.zeros(n_contours)
+		contours[0] = irac_rms
 		
 		for i in range(1, n_contours):
 			contours[i] = contours[0]*np.sqrt(2)*n
@@ -190,13 +190,13 @@ class Multiwavelength_Image(object):
 		ax.set_ylim(0.3*N, 0.7*N)
 
 		hdu = fits.open(hst_path+hst_img)
-		hst_hdr  = hdu[1].header
-		hst_data = hdu[1].data[:,:]
+		hst_hdr  = hdu[0].header
+		hst_data = hdu[0].data[:,:]
 
 		hst_wcs = WCS(hst_hdr)
 
 		x = len(hst_data)
-		photflam = hdu[1].header['photflam']  #erg/s/cm^2/Ang
+		photflam = hdu[0].header['photflam']  #erg/s/cm^2/Ang
 
 		hst_arr = [ [hst_data[i][j]*photflam*1.e22 for j in range(x)] for i in range(x) ]
 		hst_fig = ax.imshow(hst_arr, transform=ax.get_transform(hst_wcs), origin='lower', 
@@ -381,7 +381,6 @@ class Multiwavelength_Image(object):
 
 		# collapse along Lya profile axis to form image
 		spec = muse_Lya.sum(axis=(1,2))
-
 		p1,p2 = spec.wave.pixel([lam1,lam2], nearest=True)
 
 		muse_img = muse_Lya[p1:p2+1, :, :].sum(axis=0)
@@ -591,7 +590,7 @@ class Multiwavelength_Image(object):
 		#empty cube	
 		cont 			= Lya_emi.clone(data_init = np.empty, var_init = np.empty) 
 		#copy of cube	
-		Lya_emi_copy 	= Lya_emi.copy()						
+		Lya_emi_copy 	= Lya_emi.copy()					
 
 		print( 'Masking copy of sub-cube...' )
 

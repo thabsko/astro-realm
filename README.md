@@ -1,4 +1,4 @@
-# radio_galaxy_phd_project-2
+# astro-realm : Astronomy - Radio galaxy Evolution Analaysis using ALma and Muse (REALM)
 
 ## Background
 The module in this repostitory contains methods that I used to carry out a data extraction, analysis and visulation of an astronomical datacubes which is structured as tensors containing pixel counts. 
@@ -15,7 +15,14 @@ In this project, the datacubes imaged a sample of seven radio galaxies. The mili
 
 
 ## Usage
-The repository contains Python modules used to carry out the data analysis. Although the functions are customised to my own use-case, it is possible to follow the method and use my implementations in your own code. 
+The repository contains Python modules used to carry out a very specific data analysis using ALMA, MUSE and ancillary Hubble Space Telescope (HST), Spitzer Space Telescope (SST) datasets and VLA datasets. 
+
+A test module is included in addition to test datasets from the data sources:
+
+- <a href="http://archive.eso.org/cms.html">ESO Archive</a>
+- <a href="https://archive.stsci.edu/hst/">HST Archive</a>
+- <a href="https://irsa.ipac.caltech.edu/data/SPITZER/docs/spitzerdataarchives/">SST Archive</a>
+- <a href="https://science.nrao.edu/facilities/vla/archive/index">VLA Archive</a>
 
 Python libraries used:
 - For astronomy: MPDAF, AstroPy, WCS

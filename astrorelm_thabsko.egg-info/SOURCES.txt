@@ -1,0 +1,12 @@
+README.md
+setup.py
+astrorelm_thabsko.egg-info/PKG-INFO
+astrorelm_thabsko.egg-info/SOURCES.txt
+astrorelm_thabsko.egg-info/dependency_links.txt
+astrorelm_thabsko.egg-info/top_level.txt
+pkg/Gaussians.py
+pkg/Image_CI.py
+pkg/Multiwavelength_Image.py
+pkg/Spectrum_CI.py
+pkg/Spectrum_HeII.py
+pkg/__init__.py

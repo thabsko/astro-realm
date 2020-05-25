@@ -32,4 +32,4 @@ Python libraries used:
 - Others: Warnings, Itertools, Math
 
 
-[1] Credit: <a href="http://irfu.cea.fr/Projets/COAST/">Computational Astrophysics at Saclay</a>
+[1] Image Credit: <a href="http://irfu.cea.fr/Projets/COAST/">Computational Astrophysics at Saclay</a>

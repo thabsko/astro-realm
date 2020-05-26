@@ -28,9 +28,9 @@ warnings.filterwarnings('ignore', category=UserWarning, append=True)
 warnings.simplefilter  ('ignore', category=AstropyWarning)
 
 
-class Image_CI(object):
+class Image_CI:
 	
-	def __init__( self, CI_path, input_dir, output_dir ):
+	def __init__( self, CI_path=None, input_dir=None, output_dir=None ):
 		"""
 		Parameters 
 		----------
@@ -77,7 +77,7 @@ class Image_CI(object):
 		wcs = WCS(hdr)
 		wcs = wcs.sub(axes=2)
 
-		# grayscale image of data
+		# Greyscale image of data
 		img_arr = moment0[0].data[0,0,:,:]
 
 		img_arr = np.rot90(img_arr, 1)

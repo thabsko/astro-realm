@@ -11,15 +11,15 @@ import matplotlib.pyplot as pl
 from lmfit import *
 import lmfit.models as lm
 
-from Gaussians import * 
-from Image_CI import *
+from .Gaussians import * 
+from .Image_CI import *
 
 import pickle
 
 
-class Spectrum_CI(object):
+class Spectrum_CI:
 
-	def __init__( self, input_dir, output_dir  ):
+	def __init__( self, input_dir=None, output_dir=None  ):
 		"""
 		input_dir : Directory of input files
 

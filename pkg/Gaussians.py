@@ -6,7 +6,7 @@ ESO (2019)
 
 import numpy as np
 
-class Gaussians(object):
+class Gaussians:
 
 	def gauss_peak( x, a, wid, g_cen, cont ):
 		"""

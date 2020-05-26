@@ -14,12 +14,12 @@ from astropy.wcs import WCS
 
 import time
 
-from Image_CI import *
+from .Image_CI import *
 
 
-class Multiwavelength_Image(object):
+class Multiwavelength_Image:
 
-	def __init__( self, output_dir ):
+	def __init__( self, output_dir=None ):
 		"""
 		output_dir : Directory of output files
 

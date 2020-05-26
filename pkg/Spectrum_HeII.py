@@ -13,7 +13,7 @@ import mpdaf.obj as mpdo
 from lmfit import *
 import lmfit.models as lm
 
-from Gaussians import * 
+from .Gaussians import * 
 
 import warnings
 from astropy.utils.exceptions import AstropyWarning
@@ -21,9 +21,9 @@ warnings.filterwarnings('ignore', category=UserWarning, append=True)
 warnings.simplefilter  ('ignore', category=AstropyWarning         )
 
 
-class Spectrum_HeII(object):
+class Spectrum_HeII:
 
-	def __init__( self, source, output_dir ):
+	def __init__( self, source=None, output_dir=None ):
 		"""
 		Parameters 
 		----------

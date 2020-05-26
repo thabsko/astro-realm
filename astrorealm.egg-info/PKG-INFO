@@ -1,7 +1,7 @@
 Metadata-Version: 2.1
-Name: astrorelm-thabsko
+Name: astrorealm
 Version: 0.0.1
-Summary: This package provides modules for analysing telescope datacubes of radio galaxies targets.
+Summary: This package provides modules for     analysing the kinematics of gas in distant radio galaxies     using telescope datasets.
 Home-page: https://github.com/thabsko/astrorealm
 Author: Sthabile Kolwa
 Author-email: sthabile.kolwa@gmail.com
@@ -40,7 +40,7 @@ Description: # astro-realm : Astronomy - Radio galaxy Evolution Analaysis using 
         - Others: Warnings, Itertools, Math
         
         
-        [1] Credit: <a href="http://irfu.cea.fr/Projets/COAST/">Computational Astrophysics at Saclay</a>
+        [1] Image Credit: <a href="http://irfu.cea.fr/Projets/COAST/">Computational Astrophysics at Saclay</a>
 Platform: UNKNOWN
 Classifier: Programming Language :: Python :: 3
 Classifier: Operating System :: OS Independent

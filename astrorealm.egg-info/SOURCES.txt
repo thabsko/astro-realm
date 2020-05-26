@@ -1,0 +1,6 @@
+README.md
+setup.py
+astrorealm.egg-info/PKG-INFO
+astrorealm.egg-info/SOURCES.txt
+astrorealm.egg-info/dependency_links.txt
+astrorealm.egg-info/top_level.txt

@@ -1,4 +1,4 @@
-# astro-realm : Astronomy - Radio galaxy Evolution Analaysis using ALma and Muse (REALM)
+# astro-realm : Astronomy - Radio galaxy Evolution analaysis using ALma and Muse (REALM)
 
 ## Background
 The module in this repostitory contains methods that I used to carry out a data extraction, analysis and visulation of an astronomical datacubes which is structured as tensors containing pixel counts. 

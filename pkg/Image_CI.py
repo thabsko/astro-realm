@@ -166,7 +166,7 @@ class Image_CI:
 			
 		Returns 
 		-------
-		[CI] luminosity and inferred H_2 mass
+		Inferred H_2 mass
 
 		"""
 		Dl = (Distance(z=z, unit=u.Mpc, cosmology=Planck15)).value

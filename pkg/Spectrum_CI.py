@@ -11,8 +11,8 @@ import matplotlib.pyplot as pl
 from lmfit import *
 import lmfit.models as lm
 
-from .Gaussians import * 
-from .Image_CI import *
+from Gaussians import * 
+from Image_CI import *
 
 import pickle
 
@@ -131,7 +131,7 @@ class Spectrum_CI:
 	
 		for spec in CI_region:
 			# 20 km/s binned 1D spectrum
-			alma_spec = np.genfromtxt('../../'+source+'_files/in/'+source+'_spec_'+spec+'_freq.txt')
+			alma_spec = np.genfromtxt(self.input_dir+source+'_spec_'+spec+'_freq.txt')
 	
 			freq = alma_spec[:,0]	# GHz
 			flux = alma_spec[:,1]	# Jy			
@@ -224,7 +224,7 @@ class Spectrum_CI:
 			ax.plot( freq, flux, c='k', drawstyle='steps-mid' )
 			# If a source has a line detection at the host, then...
 			if source != 'TNJ0121':
-				alma_spec_80 = np.genfromtxt('../../'+source+'_files/in/'+source+'_spec_host_80kms_freq.txt')
+				alma_spec_80 = np.genfromtxt(self.input_dir+source+'_spec_host_80kms_freq.txt')
 
 				freq_80 = alma_spec_80[:,0]	
 				flux_80 = alma_spec_80[:,1]

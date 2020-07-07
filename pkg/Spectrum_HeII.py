@@ -13,7 +13,7 @@ import mpdaf.obj as mpdo
 from lmfit import *
 import lmfit.models as lm
 
-from .Gaussians import * 
+from Gaussians import * 
 
 import warnings
 from astropy.utils.exceptions import AstropyWarning

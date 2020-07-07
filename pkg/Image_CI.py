@@ -190,7 +190,7 @@ class Image_CI:
 
 		M_H2_err = M_H2*( (z_err/z)**2 + (SdV_err/SdV)**2 )
 
-		print( 'M_CI <= %.2e' %M_CI )
+		print( 'M_[CI] <= %.2e' %M_CI )
 
 		print( 'M_H2/M_sol = %.3e +/- %.3e' %(M_H2, M_H2_err) )
 		print( 'M_H2/M_sol (upper limit) <= %.3e' %M_H2 )

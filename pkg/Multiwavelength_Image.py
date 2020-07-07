@@ -14,7 +14,7 @@ from astropy.wcs import WCS
 
 import time
 
-from .Image_CI import *
+from Image_CI import *
 
 
 class Multiwavelength_Image:

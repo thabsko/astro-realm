@@ -1,4 +1,4 @@
-# astro-realm : Astronomy - Radio galaxy Evolution analaysis using ALma and Muse (REALM)
+# astro-realm : Astronomy - Radio galaxy Evolution analysis using ALma and Muse (REALM)
 
 ## Background
 

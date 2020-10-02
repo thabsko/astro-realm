@@ -11,7 +11,7 @@ import matplotlib.pyplot as pl
 from lmfit import *
 import lmfit.models as lm
 
-from Gaussians import * 
+from Gaussian import * 
 from Image_CI import *
 
 import pickle
@@ -128,15 +128,18 @@ class Spectrum_CI:
 		hdr =  moment0[0].header
 	
 		bmaj, bmin, bpa = hdr['bmaj'], hdr['bmin'], hdr['bpa']  # bmaj, bmin in degrees
+
+		print('{:.2f} x {:.2f} arcsec^2'.format(bmaj*3600, bmin*3600))
 	
+		k = -1 
 		for spec in CI_region:
-			# 20 km/s binned 1D spectrum
+			k += 1
+			# 10 km/s binned 1D spectrum
 			alma_spec = np.genfromtxt(self.input_dir+source+'_spec_'+spec+'_freq.txt')
 	
 			freq = alma_spec[:,0]	# GHz
 			flux = alma_spec[:,1]	# Jy			
 			flux = [ alma_spec[:,1][i]*1.e3 for i in range(len(flux)) ] # mJy
-
 
 			# Draw spectrum
 			fig = pl.figure(figsize=(7,5))
@@ -144,21 +147,22 @@ class Spectrum_CI:
 			ax = pl.gca()
 
 			# For [CI] detections
-			if spec != 'host' or source == 'TNJ0121': 
+			if spec != 'host' or source=='TNJ0121': 
 				print( '-'*len('   '+spec+' '+source+'   '))
 				print('   '+spec+' '+source+'   ')
 				print( '-'*len('   '+spec+' '+source+'   '))
 
 				# Initialise fit parameters
 				pars = Parameters()
+
 				pars.add_many( 
-					('g_cen', p[0], True, 0.),
-					('a', p[1], True, 0.),	
-					('wid', p[2], True, 0.),  	
-					('cont', p[3], True ))
+					('g_cen', p[k][1], True, 0.),
+					('a', p[k][2], True, 0.),	
+					('wid', p[k][3], True, 0.),  	
+					('cont', p[k][4], True ))
 				
 				# Fit [CI] line
-				mod 	= lm.Model(Gaussians.gauss_peak) 
+				mod 	= lm.Model(Gaussian.gauss) 
 				fit 	= mod.fit(flux, pars, x=freq)
 
 				print( fit.fit_report() )
@@ -197,7 +201,7 @@ class Spectrum_CI:
 				v_obs = self.c*(1. - freq_o/freq_em)
 	
 				vel_offset = v_obs - v_sys
-				vel_offset_err = vel_offset*( (freq_o_err/freq_o)**2 + (z_err/z)**2 )
+				vel_offset_err = vel_offset * (freq_o_err/freq_o)
 	
 				print( "Velocity shift (km/s) = %.3f +/- %.3f" %( vel_offset, vel_offset_err ) )
 	
@@ -207,8 +211,8 @@ class Spectrum_CI:
 	
 				print('Moment-0 map velocity range: %.2f to %.2f km/s' %(v_obs_mt0[1], v_obs_mt0[0]) )
 	
-				freq_ax = np.linspace( freq.min(), freq.max(), num=100)
-				ax.plot(freq_ax, Gaussians.gauss_peak(freq_ax, res['a'], res['wid'], 
+				freq_ax = np.linspace( freq.min(), freq.max(), num=len(freq))
+				ax.plot(freq_ax, Gaussian.gauss(freq_ax, res['a'], res['wid'], 
 					res['g_cen'], res['cont']), c='red')
 	
 				fit_params = [ res['a'], res['a'].stderr,  res['wid'], res['wid'].stderr,
@@ -222,17 +226,20 @@ class Spectrum_CI:
 				flux = flux
 			
 			ax.plot( freq, flux, c='k', drawstyle='steps-mid' )
-			# If a source has a line detection at the host, then...
+
 			if source != 'TNJ0121':
-				alma_spec_80 = np.genfromtxt(self.input_dir+source+'_spec_host_80kms_freq.txt')
+				alma_spec_100 = np.genfromtxt(self.input_dir+source+'_spec_host_100kms_freq.txt')
 
-				freq_80 = alma_spec_80[:,0]	
-				flux_80 = alma_spec_80[:,1]
-				flux_80 = [ flux_80[i]*1.e3 for i in range(len(flux_80)) ]
+				freq_100 = alma_spec_100[:,0]	
+				flux_100 = alma_spec_100[:,1]
+				flux_100 = [ flux_100[i]*1.e3 for i in range(len(flux_100)) ]
 
-				ax.plot( freq_80, flux_80, c='#0a78d1', drawstyle='steps-mid' )
+				ax.plot( freq_100, flux_100, c='#0a78d1', drawstyle='steps-mid' )
+
 			else: 
-				"No need show 80 km/s binned spectrum."
+				print("Host Galaxy has [CI]1-0 detection!")
+
+			pl.savefig(self.output_dir+'CI_spec_'+spec+'.png')
 		
 			# Pickle figure and save to re-open again
 			pickle.dump( fig, open( self.output_dir+'CI_spec_'+spec+'.pickle', 'wb' ) )
@@ -243,8 +250,9 @@ class Spectrum_CI:
 		for spec in CI_region:
 			mpl_ax = pickle.load(open(self.output_dir+'CI_spec_'+spec+'.pickle', 'rb'))
 
-			data1.append(mpl_ax.axes[0].lines[0].get_data())	# model or 20km/s host
-			data2.append(mpl_ax.axes[0].lines[1].get_data())	# data 	or 80km/s host
+			data1.append(mpl_ax.axes[0].lines[0].get_data())	# model or finely smoothed spectrum for non-detection
+			data2.append(mpl_ax.axes[0].lines[1].get_data())	# data 	or widely smoothed spectrum for non-detection
+
 
 		no_subplots = len(data1)
 		
@@ -252,80 +260,66 @@ class Spectrum_CI:
 		pl.subplots_adjust(hspace=0, wspace=0.01) 
 
 		# Velocity axes 
-		v_radio1 = [ self.freq_to_vel(data1[1][0][i], freq_em, 0.) for i in range(len(data1[1][0])) ] #model
+		v_radio1 = [ self.freq_to_vel(data1[1][0][i], freq_em, 0.) for i in range(len(data1[1][0])) ] #model fit
 		v_radio2 = [ self.freq_to_vel(data2[1][0][i], freq_em, 0.) for i in range(len(data2[1][0])) ] #data 
-		v_radio3 = [ self.freq_to_vel(data2[0][0][i], freq_em, 0.) for i in range(len(data2[0][0])) ] #80kms data
+		v_radio3 = [ self.freq_to_vel(data2[0][0][i], freq_em, 0.) for i in range(len(data2[0][0])) ] #widely smoothed data
 
-		# # Frequency at the systemic redshift (from HeII)
+		# Frequency at the systemic redshift (from HeII)
 		freq_sys = freq_em/(1.+z)				
 		vel0 = self.freq_to_vel(freq_sys, freq_em, 0.)
 		
-		# # Velocity offset axes
-		voff1 = [ v_radio1[i] - vel0 for i in range(len(v_radio1)) ]	#model 
-		voff2 = [ v_radio2[i] - vel0 for i in range(len(v_radio2)) ]	#data 
-		voff_80 = [ v_radio3[i] - vel0 for i in range(len(v_radio3)) ]	#80kms data
+		# Velocity offset axes
+		voff1 = [ v_radio1[i] - vel0 for i in range(len(v_radio1)) ]		#model fit
+		voff2 = [ v_radio2[i] - vel0 for i in range(len(v_radio2)) ]		#data
+		voff_wide = [ v_radio3[i] - vel0 for i in range(len(v_radio3)) ]	#widely smoothed data
 
-		# Plot parameters
+		# Global plot parameters
 		fs = 14
 		dx = 0.05
 		dy = 0.92
 
-		# Custom plot parameters for each source
+		# Custom plot parameters per source
 		if source == '4C03':
 			ax[0].plot( voff2, data1[0][1], c='k', drawstyle='steps-mid' )
-			ax[0].plot( voff_80, data2[0][1], c='#0a78d1', drawstyle='steps-mid', lw=2 )
-			ax[0].text(dx, dy, '(a) Host Galaxy', ha='left', transform=ax[0].transAxes, fontsize=fs, color='red')
-			ax[0].set_ylim([ 1.19*min(data1[0][1]), 1.19*max(data1[0][1]) ])	
+			ax[0].plot( voff_wide, data2[0][1], c='#0a78d1', drawstyle='steps-mid', lw=2 )
+			ax[0].text(dx, dy, '(a) Host Galaxy', ha='left', transform=ax[0].transAxes, fontsize=fs, color='red')			
 			
-			NW_cont = np.genfromtxt(self.output_dir+'NW_fit_params.txt')[6]
+			SE_cont = np.genfromtxt(self.output_dir+'SE_fit_params.txt')[6]
 			ax[1].plot( voff1, data1[1][1], c='red' )
 			ax[1].plot( voff2, data2[1][1], c='k', drawstyle='steps-mid' )
-			indices = [ i for i in range(len(voff2)) if (voff2[i] > -50. and voff2[i] < 30.)  ]
+			indices = [ i for i in range(len(voff2)) if (voff2[i] > -340 and voff2[i] < -250.)  ]
 			voff2_sub = [ voff2[i] for i in indices ]
 			data2_2_sub = [ data2[1][1][i] for i in indices ]
-			ax[1].fill_between( voff2_sub, data2_2_sub, NW_cont, interpolate=1, color='yellow' )
-			ax[1].text(dx, dy, '(b) North-west', ha='left', transform=ax[1].transAxes, fontsize=fs, color		='magenta')
-			ax[1].set_ylim([ 1.19*min(data2[1][1]), 1.19*max(data2[1][1]) ])	
-		
-
-			E_cont = np.genfromtxt(self.output_dir+'E_fit_params.txt')[6]
-			ax[2].plot( voff1, data1[2][1], c='red' )
-			ax[2].plot( voff2, data2[2][1], c='k', drawstyle='steps-mid')
-			indices = [ i for i in range(len(voff2)) if (voff2[i] > -50. and voff2[i] < 50.)  ]
-			voff2_sub = [ voff2[i] for i in indices ]
-			data3_2_sub = [ data2[2][1][i] for i in indices ]
-			ax[2].fill_between( voff2_sub, data3_2_sub, E_cont, interpolate=1, color='yellow' )
-			ax[2].text(dx, dy, '(c) East-south-east', ha='left', transform=ax[2].transAxes, fontsize=fs, 		color='cyan')
-			ax[2].set_ylim([ 1.19*min(data2[2][1]), 1.19*max(data2[2][1]) ])	
+			ax[1].fill_between( voff2_sub, data2_2_sub, SE_cont, interpolate=1, color='yellow' )
+			ax[1].text(dx, dy, '(b) South-east', ha='left', transform=ax[1].transAxes, fontsize=fs, color='orange')
 			
 			for ax in ax:
 				ax.set_ylabel(r'S$_\nu$ (mJy)', fontsize=fs)
-				ax.plot([0.,0.], [-0.69, 0.69], c='gray', ls='--')
-		
+				ax.plot([0.,0.], [-0.5, 1.3], c='gray', ls='--')
+				ax.set_ylim([-0.5, 1.5])
+
 			pl.xlabel(r'$\Delta v$ (km s$^{-1}$)', fontsize=fs)
 			pl.savefig(self.output_dir+'4C03_CI_spectrums.png', bbox_inches = 'tight',
     		pad_inches = 0.1)
 
 		elif source == '4C04':
 			ax[0].plot( voff2, data1[0][1], c='k', drawstyle='steps-mid' )
-			ax[0].plot( voff_80, data2[0][1], c='#0a78d1', drawstyle='steps-mid', lw=2)
-			indices = [ i for i in range(len(voff2)) if (voff2[i] > -50. and voff2[i] < 50.)  ]
+			ax[0].plot( voff_wide, data2[0][1], c='#0a78d1', drawstyle='steps-mid', lw=2)
 			ax[0].text(dx, dy, '(a) Host Galaxy', ha='left', transform=ax[0].transAxes, fontsize=fs, color='red')
-			ax[0].set_ylim([ 1.19*min(data1[0][1]), 1.19*max(data1[0][1]) ])	
 			
-			NE_cont = np.genfromtxt(self.output_dir+'NE_fit_params.txt')[6]
+			NE_cont = np.genfromtxt(self.output_dir+'NW_fit_params.txt')[6]
 			ax[1].plot(voff1, data1[1][1], c='red')
 			ax[1].plot(voff2, data2[1][1], c='k', drawstyle='steps-mid')
-			indices = [ i for i in range(len(voff2)) if (voff2[i] > -10. and voff2[i] < 70.)  ]
+			indices = [ i for i in range(len(voff2)) if (voff2[i] > -320. and voff2[i] < -280.)  ]
 			voff2_sub = [ voff2[i] for i in indices ]
 			data2_2_sub = [ data2[1][1][i] for i in indices ]
 			ax[1].fill_between( voff2_sub, data2_2_sub, NE_cont, interpolate=1, color='yellow' )
-			ax[1].text(dx, dy, '(b) North-east', ha='left', transform=ax[1].transAxes, fontsize=fs, color='cyan')
-			ax[1].set_ylim([ 1.19*min(data2[1][1]), 1.19*max(data2[1][1]) ])	
+			ax[1].text(dx, dy, '(b) North-west', ha='left', transform=ax[1].transAxes, fontsize=fs, color='orange')
 			
 			for ax in ax:
 				ax.set_ylabel(r'S$_\nu$ (mJy)', fontsize=fs)
-				ax.plot([0.,0.], [-1., 2.], c='gray', ls='--')
+				ax.plot([0.,0.], [0.5, 2.4], c='gray', ls='--')
+				ax.set_ylim([0.5, 2.4])
 		
 			pl.xlabel(r'$\Delta v$ (km s$^{-1}$)', fontsize=fs)
 			pl.savefig(self.output_dir+'4C04_CI_spectrums.png', bbox_inches = 'tight',
@@ -333,67 +327,64 @@ class Spectrum_CI:
 
 		elif source == '4C19':
 			ax[0].plot( voff2, data1[0][1], c='k', drawstyle='steps-mid' )
-			ax[0].plot( voff_80, data2[0][1], c='#0a78d1', drawstyle='steps-mid' )
-			ax[0].text(dx, dy, '(a) Host Galaxy', ha='left', transform=ax[0].transAxes, fontsize=fs, color='red')
-			ax[0].set_ylim([ 1.19*min(data1[0][1]), 1.19*max(data1[0][1]) ])	
-			
-			NW_cont = np.genfromtxt(self.output_dir+'NW_fit_params.txt')[6]
-			ax[1].plot(voff1, data1[1][1], c='red')
-			ax[1].plot(voff2, data2[1][1], c='k', drawstyle='steps-mid')
-			indices = [ i for i in range(len(voff2)) if (voff2[i] > -20. and voff2[i] < 40.)  ]
-			voff2_sub = [ voff2[i] for i in indices ]
-			data2_2_sub = [ data2[1][1][i] for i in indices ]
-			ax[1].fill_between( voff2_sub, data2_2_sub, NW_cont, interpolate=1, color='yellow' )
-			ax[1].text(dx, dy, '(b) North-north-west', ha='left', transform=ax[1].transAxes, fontsize=fs, color='purple')
-			ax[1].set_ylim([ 1.19*min(data2[1][1]), 1.19*max(data2[1][1]) ])	
+			ax[0].plot( voff_wide, data2[0][1], c='#0a78d1', drawstyle='steps-mid' )
+			ax[0].text(dx, dy, '(a) Host Galaxy', ha='left', transform=ax[0].transAxes, fontsize=fs, color='red')		
 
 			SE_cont = np.genfromtxt(self.output_dir+'SE_fit_params.txt')[6]
+			ax[1].plot(voff1, data1[1][1], c='red')
+			ax[1].plot(voff2, data2[1][1], c='k', drawstyle='steps-mid')
+			indices = [ i for i in range(len(voff2)) if (voff2[i] > -10. and voff2[i] < 30.)  ]
+			voff2_sub = [ voff2[i] for i in indices ]
+			data2_2_sub = [ data2[1][1][i] for i in indices ]
+			ax[1].fill_between( voff2_sub, data2_2_sub, SE_cont, interpolate=1, color='yellow' )
+			ax[1].text(dx, dy, '(c) South-east', ha='left', transform=ax[1].transAxes, fontsize=fs, color='purple')	
+
+			NE_cont = np.genfromtxt(self.output_dir+'NE_fit_params.txt')[6]
 			ax[2].plot(voff1, data1[2][1], c='red')
 			ax[2].plot(voff2, data2[2][1], c='k', drawstyle='steps-mid')
-			indices = [ i for i in range(len(voff2)) if (voff2[i] > -20. and voff2[i] < 40.)  ]
+			indices = [ i for i in range(len(voff2)) if (voff2[i] > -110. and voff2[i] < -10.)  ]
 			voff2_sub = [ voff2[i] for i in indices ]
-			data3_2_sub = [ data2[2][1][i] for i in indices ]
-			ax[2].fill_between( voff2_sub, data3_2_sub, SE_cont, interpolate=1, color='yellow' )
-			ax[2].text(dx, dy, '(c) East-south-east', ha='left', transform=ax[2].transAxes, fontsize=fs, color='orange')
-			ax[2].set_ylim([ 1.19*min(data2[2][1]), 1.19*max(data2[2][1]) ])
+			data2_2_sub = [ data2[2][1][i] for i in indices ]
+			ax[2].fill_between( voff2_sub, data2_2_sub, NE_cont, interpolate=1, color='yellow' )
+			ax[2].text(dx, dy, '(b) North-east', ha='left', transform=ax[2].transAxes, fontsize=fs, color='orange')
+
 
 			for ax in ax:
 				ax.set_ylabel(r'S$_\nu$ (mJy)', fontsize=fs)
-				ax.plot([0.,0.], [-1., 2.], c='gray', ls='--')
+				ax.plot([0.,0.], [-1., 1.9], c='gray', ls='--')
+				ax.set_ylim([-1., 1.9])
 		
 			pl.xlabel(r'$\Delta v$ (km s$^{-1}$)', fontsize=fs)
-			pl.savefig(self.output_dir+'4C04_CI_spectrums.png', bbox_inches = 'tight',
+			pl.savefig(self.output_dir+'4C19_CI_spectrums.png', bbox_inches = 'tight',
 				pad_inches = 0.1)
 
 		elif source == 'MRC0943':
 			ax[0].plot( voff2, data1[0][1], c='k', drawstyle='steps-mid' )
-			ax[0].plot( voff_80, data2[0][1], c='#0a78d1', drawstyle='steps-mid', lw=2)
+			ax[0].plot( voff_wide, data2[0][1], c='#0a78d1', drawstyle='steps-mid', lw=2)
 			ax[0].text(dx, dy, '(a) Host Galaxy', ha='left', transform=ax[0].transAxes, fontsize=fs, color='red')
-			ax[0].set_ylim([ 1.19*min(data1[0][1]), 1.19*max(data1[0][1]) ])	
 			
-			NW_cont = np.genfromtxt(self.output_dir+'NW_fit_params.txt')[6]
+			SW_cont = np.genfromtxt(self.output_dir+'SW_fit_params.txt')[6]
 			ax[1].plot(voff1, data1[1][1], c='red')
 			ax[1].plot(voff2, data2[1][1], c='k', drawstyle='steps-mid')
-			indices = [ i for i in range(len(voff2)) if (voff2[i] > 20. and voff2[i] < 100.)  ]
+			indices = [ i for i in range(len(voff2)) if (voff2[i] > -200. and voff2[i] < 200.)  ]
 			voff2_sub = [ voff2[i] for i in indices ]
 			data2_2_sub = [ data2[1][1][i] for i in indices ]
-			ax[1].fill_between( voff2_sub, data2_2_sub, NW_cont, interpolate=1, color='yellow' )
-			ax[1].text(dx, dy, '(b) North-west', ha='left', transform=ax[1].transAxes, fontsize=fs, color='orange')
-			ax[1].set_ylim([ 1.19*min(data2[1][1]), 1.19*max(data2[1][1]) ])	
+			ax[1].fill_between( voff2_sub, data2_2_sub, SW_cont, interpolate=1, color='yellow' )
+			ax[1].text(dx, dy, '(b) Thor/Odin ', ha='left', transform=ax[1].transAxes, fontsize=fs, color='orange')
 
-			SW_cont = np.genfromtxt(self.output_dir+'SW2_fit_params.txt')[6]
+			Loke_cont = np.genfromtxt(self.output_dir+'Loke_fit_params.txt')[6]
 			ax[2].plot(voff1, data1[2][1], c='red')
 			ax[2].plot(voff2, data2[2][1], c='k', drawstyle='steps-mid')
-			indices = [ i for i in range(len(voff2)) if (voff2[i] > 20. and voff2[i] < 120.)  ]
+			indices = [ i for i in range(len(voff2)) if (voff2[i] > -100. and voff2[i] < -20.)  ]
 			voff2_sub = [ voff2[i] for i in indices ]
 			data3_2_sub = [ data2[2][1][i] for i in indices ]
-			ax[2].fill_between( voff2_sub, data3_2_sub, SW_cont, interpolate=1, color='yellow' )
-			ax[2].text(dx, dy, '(c) South-west', ha='left', transform=ax[2].transAxes, fontsize=fs, color='magenta')
-			ax[2].set_ylim([ 1.19*min(data2[2][1]), 1.19*max(data2[2][1]) ])	
+			ax[2].fill_between( voff2_sub, data3_2_sub, Loke_cont, interpolate=1, color='yellow' )
+			ax[2].text(dx, dy, '(c) Loke', ha='left', transform=ax[2].transAxes, fontsize=fs, color='cyan')
 
 			for ax in ax:
 				ax.set_ylabel(r'S$_\nu$ (mJy)', fontsize=fs)
-				ax.plot([0.,0.], [-1., 2.], c='gray', ls='--')
+				ax.plot([0.,0.], [-1., 1.9], c='gray', ls='--')
+				ax.set_ylim([-1., 1.9])
 		
 			pl.xlabel(r'$\Delta v$ (km s$^{-1}$)', fontsize=fs)
 			pl.savefig(self.output_dir+'MRC0943_CI_spectrums.png', bbox_inches = 'tight',
@@ -403,26 +394,25 @@ class Spectrum_CI:
 			host_cont = np.genfromtxt(self.output_dir+spec+'_fit_params.txt')[6]
 			ax[0].plot(voff1, data1[0][1], c='red')
 			ax[0].plot(voff2, data2[0][1], c='k', drawstyle='steps-mid')
-			indices = [ i for i in range(len(voff2)) if (voff2[i] > -60. and voff2[i] < 200.)  ]
+			indices = [ i for i in range(len(voff2)) if (voff2[i] > -30. and voff2[i] < 20.)  ]
 			voff2_sub = [ voff2[i] for i in indices ]
 			data1_2_sub = [ data2[0][1][i] for i in indices ]
 			ax[0].fill_between( voff2_sub, data1_2_sub, host_cont, interpolate=1, color='yellow' )
 			ax[0].text(dx, dy, '(a) Host Galaxy', ha='left', transform=ax[0].transAxes, fontsize=fs, color='red')
-			ax[0].set_ylim([ 1.19*min(data2[0][1]), 1.19*max(data2[0][1]) ])
 		
 			NW_far_cont = np.genfromtxt(self.output_dir+spec+'_fit_params.txt')[6]
 			ax[1].plot(voff1, data1[1][1], c='red')
 			ax[1].plot(voff2, data2[1][1], c='k', drawstyle='steps-mid')
-			indices = [ i for i in range(len(voff2)) if (voff2[i] > -60. and voff2[i] < 80.)  ]
+			indices = [ i for i in range(len(voff2)) if (voff2[i] > -390. and voff2[i] < -320.)  ]
 			voff2_sub = [ voff2[i] for i in indices ]
 			data2_2_sub = [ data2[1][1][i] for i in indices ]
 			ax[1].fill_between( voff2_sub, data2_2_sub, NW_far_cont, interpolate=1, color='yellow' )
 			ax[1].text(dx, dy, '(b) North-west', ha='left', transform=ax[1].transAxes, fontsize=fs, color='#3eff13')
-			ax[1].set_ylim([ 1.19*min(data2[1][1]), 1.19*max(data2[1][1]) ])	
 		
 			for ax in ax:
 				ax.set_ylabel(r'S$_\nu$ (mJy)', fontsize=fs)
-				ax.plot([0.,0.], [-1., 2.], c='gray', ls='--')
+				ax.plot([0.,0.], [-1., 1.9], c='gray', ls='--')
+				ax.set_ylim([-1.,1.9])
 		
 			pl.xlabel(r'$\Delta v$ (km s$^{-1}$)', fontsize=fs)
 			pl.savefig(self.output_dir+'TNJ0121_CI_spectrums.png', bbox_inches = 'tight',
@@ -430,77 +420,74 @@ class Spectrum_CI:
 
 		elif source == 'TNJ0205':
 			ax[0].plot(voff2, data1[0][1], c='k', drawstyle='steps-mid' )
-			ax[0].plot(voff_80, data2[0][1], c='#0a78d1', drawstyle='steps-mid', lw=2 )
+			ax[0].plot(voff_wide, data2[0][1], c='#0a78d1', drawstyle='steps-mid', lw=2 )
 			ax[0].text(dx, dy, '(a) Host Galaxy', ha='left', transform=ax[0].transAxes, fontsize=fs, color='red')
-			ax[0].set_ylim([ 1.19*min(data1[0][1]), 1.19*max(data1[0][1]) ])
 		
-			E_cont = np.genfromtxt(self.output_dir+'E_fit_params.txt')[6]
+			NW_cont = np.genfromtxt(self.output_dir+'NW_fit_params.txt')[6]
 			ax[1].plot(voff1, data1[1][1], c='red')
 			ax[1].plot(voff2, data2[1][1], c='k', drawstyle='steps-mid')
-			indices = [ i for i in range(len(voff2)) if (voff2[i] > -20. and voff2[i] < 60.)  ]
+			indices = [ i for i in range(len(voff2)) if (voff2[i] > 330. and voff2[i] < 410.)  ]
 			voff2_sub = [ voff2[i] for i in indices ]
 			data2_2_sub = [ data2[1][1][i] for i in indices ]
-			ax[1].fill_between( voff2_sub, data2_2_sub, E_cont, interpolate=1, color='yellow' )
-			ax[1].text(dx, dy, '(b) East-north-east', ha='left', transform=ax[1].transAxes, fontsize=fs, color=	'cyan')
-			ax[1].set_ylim([ 1.19*min(data2[1][1]), 1.19*max(data2[1][1]) ])	
+			ax[1].fill_between( voff2_sub, data2_2_sub, NW_cont, interpolate=1, color='yellow' )
+			ax[1].text(dx, dy, '(b) North-west', ha='left', transform=ax[1].transAxes, fontsize=fs, color=	'purple')
 		
-			SE_cont = np.genfromtxt(self.output_dir+'SE_fit_params.txt')[6]
+			SW_cont = np.genfromtxt(self.output_dir+'SW_fit_params.txt')[6]
 			ax[2].plot(voff1, data1[2][1], c='red')
 			ax[2].plot(voff2, data2[2][1], c='k', drawstyle='steps-mid')
-			indices = [ i for i in range(len(voff2)) if (voff2[i] > -20. and voff2[i] < 80.)  ]
+			indices = [ i for i in range(len(voff2)) if (voff2[i] > 50. and voff2[i] < 200.)  ]
 			voff2_sub = [ voff2[i] for i in indices ]
 			data3_2_sub = [ data2[2][1][i] for i in indices ]
-			ax[2].fill_between( voff2_sub, data3_2_sub, SE_cont, interpolate=1, color='yellow' )
-			ax[2].text(dx, dy, '(c) South-east', ha='left', transform=ax[2].transAxes, fontsize=fs, color='orange')
-			ax[2].set_ylim([ 1.19*min(data2[2][1]), 1.19*max(data2[2][1]) ])	
+			ax[2].fill_between( voff2_sub, data3_2_sub, SW_cont, interpolate=1, color='yellow' )
+			ax[2].text(dx, dy, '(c) South-west', ha='left', transform=ax[2].transAxes, fontsize=fs, color='orange')
+
+			SE_cont = np.genfromtxt(self.output_dir+'SE_fit_params.txt')[6]
+			ax[3].plot(voff1, data1[3][1], c='red')
+			ax[3].plot(voff2, data2[3][1], c='k', drawstyle='steps-mid')
+			indices = [ i for i in range(len(voff2)) if (voff2[i] > -380. and voff2[i] < -320.)  ]
+			voff2_sub = [ voff2[i] for i in indices ]
+			data3_2_sub = [ data2[3][1][i] for i in indices ]
+			ax[3].fill_between( voff2_sub, data3_2_sub, SE_cont, interpolate=1, color='yellow' )
+			ax[3].text(dx, dy, '(c) South-east', ha='left', transform=ax[3].transAxes, fontsize=fs, color='cyan')
+
 
 			for ax in ax:
 				ax.set_ylabel(r'S$_\nu$ (mJy)', fontsize=fs)
-				ax.plot([0.,0.], [-1., 2.], c='gray', ls='--')
-		
+				ax.plot([0.,0.], [-1., 2.4], c='gray', ls='--')
+				ax.set_ylim(-1., 2.4)
+				
 			pl.xlabel(r'$\Delta v$ (km s$^{-1}$)', fontsize=fs)
 			pl.savefig(self.output_dir+'TNJ0205_CI_spectrums.png', bbox_inches = 'tight',
 				pad_inches = 0.1)
 
 		elif source == 'TNJ1338':
 			ax[0].plot( voff2, data1[0][1], c='k', drawstyle='steps-mid' )
-			ax[0].plot( voff_80, data2[0][1], c='#0a78d1', drawstyle='steps-mid' )
+			ax[0].plot( voff_wide, data2[0][1], c='#0a78d1', drawstyle='steps-mid' )
 			ax[0].text(dx, dy, '(a) Host Galaxy', ha='left', transform=ax[0].transAxes, fontsize=fs, color='red')
-			ax[0].set_ylim([ 1.19*min(data1[0][1]), 1.19*max(data1[0][1]) ])	
 
-			NW_cont = np.genfromtxt(self.output_dir+'NW_fit_params.txt')[6]
+			N_cont = np.genfromtxt(self.output_dir+'N_fit_params.txt')[6]
 			ax[1].plot(voff1, data1[1][1], c='red')
 			ax[1].plot(voff2, data2[1][1], c='k', drawstyle='steps-mid')
-			indices = [ i for i in range(len(voff2)) if (voff2[i] > -50. and voff2[i] < 70.)  ]
+			indices = [ i for i in range(len(voff2)) if (voff2[i] > -800. and voff2[i] < -720.)  ]
 			voff2_sub = [ voff2[i] for i in indices ]
 			data2_2_sub = [ data2[1][1][i] for i in indices ]
-			ax[1].fill_between( voff2_sub, data2_2_sub, NW_cont, interpolate=1, color='yellow' )
-			ax[1].text(dx, dy, '(b) North-north-west', ha='left', transform=ax[1].transAxes, fontsize=fs, color='purple')
-			ax[1].set_ylim([ 1.19*min(data2[1][1]), 1.19*max(data2[1][1]) ])
+			ax[1].fill_between( voff2_sub, data2_2_sub, N_cont, interpolate=1, color='yellow' )
+			ax[1].text(dx, dy, '(b) North', ha='left', transform=ax[1].transAxes, fontsize=fs, color='purple')
 
 			SW_cont = np.genfromtxt(self.output_dir+'SW_fit_params.txt')[6]
 			ax[2].plot(voff1, data1[2][1], c='red')
 			ax[2].plot(voff2, data2[2][1], c='k', drawstyle='steps-mid')
-			indices = [ i for i in range(len(voff2)) if (voff2[i] > -60. and voff2[i] < 60.)  ]
+			indices = [ i for i in range(len(voff2)) if (voff2[i] > -430. and voff2[i] < -250.)  ]
 			voff2_sub = [ voff2[i] for i in indices ]
 			data3_2_sub = [ data2[2][1][i] for i in indices ]
 			ax[2].fill_between( voff2_sub, data3_2_sub, SW_cont, interpolate=1, color='yellow' )
-			ax[2].text(dx, dy, '(c) South-south-west', ha='left', transform=ax[2].transAxes, fontsize=fs, color='orange')
-			ax[2].set_ylim([ 1.19*min(data2[2][1]), 1.19*max(data2[2][1]) ])		
+			ax[2].text(dx, dy, '(c) South-west', ha='left', transform=ax[2].transAxes, fontsize=fs, color='orange')
 
-			NE_cont = np.genfromtxt(self.output_dir+'NE_fit_params.txt')[6]
-			ax[3].plot(voff1, data1[3][1], c='red')
-			ax[3].plot(voff2, data2[3][1], c='k', drawstyle='steps-mid')
-			indices = [ i for i in range(len(voff2)) if (voff2[i] > -20. and voff2[i] < 80.)  ]
-			voff2_sub = [ voff2[i] for i in indices ]
-			data4_2_sub = [ data2[3][1][i] for i in indices ]
-			ax[3].fill_between( voff2_sub, data4_2_sub, NE_cont, interpolate=1, color='yellow' )
-			ax[3].text(dx, dy, '(d) North-east', ha='left', transform=ax[3].transAxes, fontsize=fs, color='cyan')
-			ax[3].set_ylim([ 1.19*min(data2[3][1]), 1.19*max(data2[3][1]) ])	
 
 			for ax in ax:
 				ax.set_ylabel(r'S$_\nu$ (mJy)', fontsize=fs)
-				ax.plot([0.,0.], [-1., 2.], c='gray', ls='--')
+				ax.plot([0.,0.], [-1., 0.9], c='gray', ls='--')
+				ax.set_ylim([-1., 0.9])
 		
 			pl.xlabel(r'$\Delta v$ (km s$^{-1}$)', fontsize=fs)
 			pl.savefig(self.output_dir+'TNJ1338_CI_spectrums.png', bbox_inches = 'tight',

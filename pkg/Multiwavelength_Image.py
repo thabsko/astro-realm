@@ -185,22 +185,21 @@ class Multiwavelength_Image:
 
 		ax.contour(CI_data, levels=contours, colors='blue', label='[CI](1-0)')
 
-		N = len(CI_data)
-		ax.set_xlim(0.3*N, 0.7*N)
-		ax.set_ylim(0.3*N, 0.7*N)
+		ax.set_xlim(10, 40)
+		ax.set_ylim(10, 40)
 
 		hdu = fits.open(hst_path+hst_img)
-		hst_hdr  = hdu[0].header
-		hst_data = hdu[0].data[:,:]
+		hst_hdr  = hdu[1].header
+		hst_data = hdu[1].data[:,:]
 
 		hst_wcs = WCS(hst_hdr)
 
 		x = len(hst_data)
-		photflam = hdu[0].header['photflam']  #erg/s/cm^2/Ang
+		photflam = hdu[1].header['photflam']  #erg/s/cm^2/Ang
 
 		hst_arr = [ [hst_data[i][j]*photflam*1.e22 for j in range(x)] for i in range(x) ]
 		hst_fig = ax.imshow(hst_arr, transform=ax.get_transform(hst_wcs), origin='lower', 
-			interpolation='nearest', vmin=-5., vmax=5000, cmap='gist_gray_r')
+			interpolation='nearest', vmin=-5., vmax=15, cmap='gist_gray_r')
 
 		left, bottom, width, height = ax.get_position().bounds
 		cb = pl.colorbar(hst_fig, orientation = 'vertical')
@@ -208,10 +207,12 @@ class Multiwavelength_Image:
 
 		ra = ax.coords[0]
 		ra.set_major_formatter('hh:mm:ss.s')
+		
+		l = 12
 
-		ax.text(60, 35, '10 kpc', color='red', fontsize=10, 
+		ax.text(l, l+1, '10 kpc', color='red', fontsize=10, 
 			bbox={'facecolor':'white', 'alpha':0.7, 'pad':10}, zorder=5)
-		ax.plot([61, 61+dl], [34., 34.], c='red', lw='2', zorder=10.)
+		ax.plot([l, l+dl], [l+0.5, l+0.5], c='red', lw='2', zorder=10.)
 
 		for tick in ax.xaxis.get_major_ticks():
 			tick.label.set_fontsize('14')
@@ -222,7 +223,7 @@ class Multiwavelength_Image:
 		return pl.savefig(self.output_dir+source+'_hst_CI_VLA_img.png')
 	
 	def irac_vla_CI( self, vla_path, vla_img, vla_rms, CI_path, CI_moment0, CI_rms,
-		irac_path, irac_img, source, dl ):
+		irac_path, irac_img, source, l, dl, irac_vmin ):
 		"""
 		
 		Visualise IRAC narrow-band image with ALMA [CI] and 
@@ -256,11 +257,12 @@ class Multiwavelength_Image:
 		with ALMA-detected [CI] and VLA radio contours 
 
 		"""
-		fig   = pl.figure(figsize=(7,5))
-		
+
 		[CI_data, CI_wcs, contours] = Image_CI.CI_contours(self, CI_path, CI_moment0, CI_rms)
 
-		ax    = fig.add_axes([0.04, 0.1, 0.85, 0.85], projection=CI_wcs)
+		fig = pl.figure(figsize=(8,6))
+		
+		ax = fig.add_axes([0.02, 0.1, 0.95, 0.85], projection=CI_wcs)
 
 		ax.contour(CI_data, levels=contours, colors='blue', 
 		 label='[CI](1-0)')
@@ -276,9 +278,8 @@ class Multiwavelength_Image:
 		ax.contour(vla_data, levels=vla_contours, colors='green',
 			transform=ax.get_transform(vla_wcs))
 
-		N = len(CI_data)
-		ax.set_xlim(0.25*N, 0.75*N)
-		ax.set_ylim(0.25*N, 0.75*N)
+		ax.set_xlim(10, 40)
+		ax.set_ylim(10, 40)
 
 		hdu = fits.open(irac_path+irac_img)[0] 
 		irac_hdr  = hdu.header
@@ -291,22 +292,7 @@ class Multiwavelength_Image:
 		pix_rms = np.sqrt(np.mean(np.square(pix)))
 		pix_med = np.median(pix)
 		vmax = (pix_med + pix_rms) 
-		vmin = (pix_med - pix_rms) 
-
-		if source=='4C04':
-			vmin, vmax = 0.1, vmax
-
-		elif source=='TN_J0121':
-			vmin, vmax = vmin/4., vmax/4.
-
-		elif source=='TNJ0205':
-			vmin, vmax = vmin/25., vmax/25.
-
-		elif source=='4C19':
-			vmin, vmax = vmin/5, vmax/5.
-
-		elif source=='TN_J1338':
-			vmin, vmax = vmin/10., vmax
+		vmin = (pix_med - pix_rms)/irac_vmin
 
 		irac_fig = ax.imshow(irac_data, transform=ax.get_transform(irac_wcs), origin='lower', 
 			interpolation='nearest', vmin=vmin, vmax=vmax, cmap='gist_gray_r')
@@ -317,10 +303,10 @@ class Multiwavelength_Image:
 
 		ra = ax.coords[0]
 		ra.set_major_formatter('hh:mm:ss.s')
-		
-		ax.text(65, 30, '10 kpc', color='red', fontsize=10, 
+
+		ax.text(l, l+1.5, '  10 kpc  ', color='red', fontsize=10, 
 			bbox={'facecolor':'white', 'alpha':0.7, 'pad':10}, zorder=5)
-		ax.plot([66, 66+dl], [29., 29.], c='red', lw='2', zorder=10.)
+		ax.plot([l, l+dl], [l+1, l+1], c='red', lw='2', zorder=10.)
 
 		for tick in ax.xaxis.get_major_ticks():
 			tick.label.set_fontsize('14')
@@ -332,7 +318,7 @@ class Multiwavelength_Image:
 	
 	def muse_lya_irac_CI( self, Lya_subcube, Lya_img, muse_lya_rms, lam1, lam2,
 		irac_path, irac_img, irac_rms, CI_path, CI_moment0, CI_rms, 
-		radio_hotspots, dl ):
+		radio_hotspots, dl, img_dim ):
 		"""
 		Overlay [CI] contours over Spitzer/IRAC imaging
 
@@ -371,7 +357,7 @@ class Multiwavelength_Image:
 		"""
 		[CI_data, CI_wcs, contours] = Image_CI.CI_contours(self, CI_path, CI_moment0, CI_rms)
 
-		fig = pl.figure(figsize=(7,5))
+		fig = pl.figure(figsize=(8,6))
 		
 		ax1 = fig.add_axes([0.02, 0.1, 0.95, 0.85], projection=CI_wcs)
 
@@ -424,20 +410,21 @@ class Multiwavelength_Image:
 		ax1.contour( irac_data, levels=contours, colors='red',
 		transform=ax1.get_transform(irac_wcs) )
 
-		if Lya_img == '4C03_Lya_img':
-			l1,l2 = 25,65
-			ax1.set_xlim(l1,l2)
-			ax1.set_ylim(l1,l2)
+		# l1,l2 are (x,y) of [CI]1-0 image
+		l1,l2 = img_dim
+		ax1.set_xlim(l1,l2)
+		ax1.set_ylim(l1,l2)
+
+		if Lya_img == 'MRC0943_Lya_img': 
+			ax1.text( l1+1.5, l1+2,'10 kpc', color='red', fontsize=10, 
+				bbox={'facecolor':'white', 'alpha':0.7, 'pad':10}, zorder=5, transform=ax1.get_transform(CI_wcs))
+			ax1.plot( [l1+1.5, l1+1.5+dl], [l1+1.5, l1+1.5], c='red', lw='2', zorder=10.)
 
 		else:
-			l1,l2 = 30,70
-			ax1.set_xlim(l1,l2)
-			ax1.set_ylim(l1,l2)
+			ax1.text( l1+1.5, l1+2,'     10 kpc     ', color='red', fontsize=10, 
+				bbox={'facecolor':'white', 'alpha':0.7, 'pad':10}, zorder=5, transform=ax1.get_transform(CI_wcs))
+			ax1.plot( [l1+1.25, l1+1.25+dl], [l1+1.75, l1+1.75], c='red', lw='2', zorder=10.)
 
-		ax1.text( l2-8, l1+5,'10 kpc', color='red', fontsize=10, 
-			bbox={'facecolor':'white', 'alpha':0.7, 'pad':10}, zorder=5, transform=ax1.get_transform(CI_wcs))
-		sp = l2-7.5
-		ax1.plot( [sp, sp+dl], [l1+4,l1+4], c='red', lw='2', zorder=10.)
 
 		ax1.set_xlabel(r'$\alpha$ (J2000)', fontsize=14)
 		ax1.set_ylabel(r'$\delta$ (J2000)', fontsize=14)
@@ -447,96 +434,8 @@ class Multiwavelength_Image:
 
 		return pl.savefig(self.output_dir+irac_img[:-5]+'_CI.png')
 	
-	def muse_lya_vla_CI( self, Lya_subcube, vla_path, vla_img, 
-		CI_path, CI_moment0, Lya_img, lam1, lam2, output_dir ):
-		"""
-		Visualise MUSE Lyman-alpha image with ALMA [CI]
-		and VLA C-band contours 
-
-		Parameters 
-		----------
-		Lya_subcubce : Filename of Ly-alpha subcube 
-
-		vla_path : Path of VLA image
-		
-		vla_img : Filename for VLA image
-
-		CI_path : Path of [CI] moment-0 map
-
-		CI_moment0 : Filename for [CI] moment-0 maps
-
-		Lya_img : Filename for Ly-alpha image
-
-		lam1 : Lower wavelength limit of Lya narrow band image
-
-		lam2 : Upper wavelength limit of Lya narrow band image
-
-		output_dir : Path of saved output
-
-		Return
-		------
-		Multiwavelength narrow-band image with MUSE Lyman-alpha image 
-		with ALMA [CI] line and VLA C-band contours 
-
-		"""
-		fig = pl.figure(figsize=(10,6))
-
-		muse_hdu = fits.open(self.output_dir+Lya_fits)	#open saved narrow-band image
-		muse_hdr = muse_hdu[1].header
-		muse_wcs = WCS(muse_hdr).celestial
-
-		ax2 = fig.add_subplot(122, projection=muse_wcs)
-		muse_cmap = ax2.imshow(muse_img_arr, origin='lower', interpolation='nearest', 
-			cmap='gist_gray_r', vmin=-5, vmax=100)
-
-		left, bottom, width, height = ax2.get_position().bounds
-		cb = pl.colorbar(muse_cmap, orientation = 'vertical')
-		cb.set_label(r'SB / 10$^{-20}$ erg s$^{-1}$ cm$^{-2}$ pix$^{-1}$', rotation=90, fontsize=16)
-		cb.ax.tick_params(labelsize=18)
-
-		ax2.set_xlim(10,80)
-		ax2.set_ylim(10,100)
-
-		[vla_data, vla_wcs, vla_contours] = self.VLA_contours(vla_path, vla_img)
-
-		ax2.contour(vla_data, levels=vla_contours, colors='green', 
-			transform=ax2.get_transform(vla_wcs), label='VLA C-band')
-
-		[CI_data, CI_wcs, ci_contours] = self.CI_contours(CI_path, CI_moment0, CI_rms)
-
-		ax2.contour(CI_data, levels=ci_contours, colors='blue', 
-			transform=ax2.get_transform(CI_wcs), label='[CI](1-0)')
-
-		ax1 = fig.add_subplot(121, projection=muse_wcs)
-
-		ax1.imshow(muse_img_arr, origin='lower', interpolation='nearest', 
-			cmap='gist_gray_r', vmin=-5, vmax=100.)
-
-		[muse_data, muse_contours] = self.muse_lya_contours( 100., 8, self.output_dir+Lya_fits)
-
-		ax1.contour(muse_data, levels=muse_contours, colors='red'
-			, label=r'MUSE Ly$\alpha$')
-
-		ax1.contour(CI_data, levels=ci_contours, colors='blue', 
-			transform=ax1.get_transform(CI_wcs), label='[CI](1-0)')
-
-		ax1.set_xlim(10,80)
-		ax1.set_ylim(10,100)
-
-		ra1 = ax1.coords[1]
-		ra1.set_major_formatter('hh:mm:ss.s')
-
-		ra2 = ax2.coords[1]
-		ra2.set_ticklabel_visible(0)
-
-		ax1.set_ylabel(r'$\delta$ (J2000)', fontsize=16)
-		fig.text(0.45, 0.02, r'$\alpha$ (J2000)', fontsize=16)
-
-		pl.subplots_adjust(wspace=0, left=0.13, right=0.85)	
-
-		return pl.savefig(self.output_dir+'muse_Lya_img_'+str(int(lam1))+'_'+str(int(lam2))+'.png')
-	
-	def muse_lya_continuum_subtract( self, muse_path, muse_cube, lam1, lam2, mask_lmin, mask_lmax, ra_lim, dec_lim, source ): 
+	def muse_lya_continuum_subtract( self, muse_path, muse_cube, lam1, lam2, mask_lmin, 
+		mask_lmax, ra_lim, dec_lim, source ): 
 		"""
 		Continuum-subtract MUSE Lya subcube
 

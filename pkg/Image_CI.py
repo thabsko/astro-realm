@@ -20,10 +20,11 @@ from lmfit import *
 import lmfit.models as lm
 
 import pyregion as pyr
-from matplotlib.patches import Ellipse
+from matplotlib.patches import Ellipse, Rectangle
 
 import warnings
 from astropy.utils.exceptions import AstropyWarning
+
 warnings.filterwarnings('ignore', category=UserWarning, append=True)
 warnings.simplefilter  ('ignore', category=AstropyWarning)
 
@@ -47,7 +48,7 @@ class Image_CI:
 		self.output_dir = output_dir
 
 	def make_narrow_band( self, CI_moment0, 
-		CI_rms, regions, dl, source ):
+		CI_rms, regions, dl, beam_pos, source ):
 		"""
 		Visualise narrow-band ALMA [CI] moment-0 map generated with CASA. 
 
@@ -103,7 +104,7 @@ class Image_CI:
 		[CI_data, CI_wcs, ci_contours] = self.CI_contours(self.CI_path, CI_moment0, CI_rms)
 
 		ax.contour(img_arr, levels=ci_contours*1.e3, colors='blue',
-		 label='[CI](1-0)', zorder=-5)
+		 label='[CI](1-0)', zorder=-5, alpha=0.4, lw=0.2)
 
 		# Annotate regions
 		regions = [ self.input_dir+i for i in regions]
@@ -121,7 +122,7 @@ class Image_CI:
 		# Add clean/synthesised beam
 		pix_deg = abs(hdr['cdelt1'])							# degrees per pixel
 		bmaj, bmin, pa = hdr['bmaj'], hdr['bmin'], hdr['bpa']  	# clean beam Parameters
-		ellip = Ellipse( (10,10), (bmaj/pix_deg), (bmin/pix_deg), (180-pa),
+		ellip = Ellipse( beam_pos, (bmaj/pix_deg), (bmin/pix_deg), (180.-pa),
 		fc='yellow', ec='black' )
 		ax.add_artist(ellip)
 
@@ -143,6 +144,31 @@ class Image_CI:
 		cb = pl.colorbar(CI_map, orientation = 'vertical')
 		cb.set_label('mJy/beam',rotation=90, fontsize=14)
 		cb.ax.tick_params(labelsize=12)
+
+		#draw MW image boundaries 
+		if (source=='4C03' or source=='MRC0943'):
+			hst = Rectangle((10,10), 30, 30, fill=0, color='#3b0a05', lw=2)
+			ax.add_artist(hst)
+			ax.text(10, 8, 'HST FOV', c='#3b0a05', fontsize=12)
+
+			if source=='4C03':
+				muse = Rectangle((15,15), 17, 17, fill=0, color='#57f542', lw=2)
+				ax.add_artist(muse)
+				ax.text(15, 13, 'MUSE FOV', c='#57f542', fontsize=12)
+
+			elif source=='MRC0943': 
+				muse = Rectangle((12,12), 26, 26, fill=0, color='#57f542', lw=2)
+				ax.add_artist(muse)
+				ax.text(12, 10, 'MUSE FOV', c='#57f542', fontsize=12)
+
+		else: 
+			irac = Rectangle((10,10), 30, 30, fill=0, color='#3b0a05', lw=2)
+			ax.add_artist(irac)
+			ax.text(10, 8,'IRAC FOV', c='#3b0a05', fontsize=12)
+
+			muse = Rectangle((15,15), 20, 20, fill=0, color='#57f542', lw=2)
+			ax.add_artist(muse)
+			ax.text(15,13,'MUSE FOV', c='#57f542', fontsize=12)
 
 		return pl.savefig(self.output_dir+source+'_CI_moment0.png')
 
@@ -229,13 +255,12 @@ class Image_CI:
 		S/N of detection : str
 		
 		"""	
-		c = 2.9979245800e5 	#speed of light in km/s
+		c = 2.9979245800e5 		#speed of light in km/s
 		freq_em = 492.161		#rest frequency of [CI](1-0) in GHz
 
 		print("-"*len("   "+source+" Host Galaxy   "))
 		print("   "+source+" Host Galaxy   ")
 		print("-"*len("   "+source+" Host Galaxy   "))
-
 
 		hdu = fits.open(self.CI_path+CI_datacube)
 		data = hdu[0].data[0,:,:,:]
@@ -245,17 +270,15 @@ class Image_CI:
 	
 		N = len(pix)
 		mean = np.mean(pix)*1.e3	# average intensity
-		std = np.std(pix)			# standard deviation intensity
 		sqrs = [ pix[i]**2 for i in range(N) ]	
-		rms = np.sqrt( sum(sqrs) / N  )*1.e3
+		rms = np.sqrt( sum(sqrs) / N )*1.e3
 	
 		m0_hdu = fits.open(self.CI_path+CI_moment0)
 		m0_hdr = m0_hdu[0].header
 	
 		# Synthesized beam-size
-		pix_deg = abs(m0_hdr['cdelt1'])
 		bmaj, bmin = m0_hdr['bmaj'], m0_hdr['bmin']
-		bmaj, bmin = bmaj*0.4/pix_deg, bmin*0.4/pix_deg			# arcsec^2
+		bmaj, bmin = bmaj*3600, bmin*3600			# arcsec^2
 	
 		print('bmaj: %.2f arcsec, bmin: %.2f arcsec' %(bmaj, bmin))
 	
@@ -276,21 +299,21 @@ class Image_CI:
 		# systemic velocity
 		vel0 = c*(1. - freq_o/freq_em)	
 	
-		# velocity offsets
+		# velocity offset
 		voff = [ v_radio[i] - vel0 for i in range(M) ]	
 		
 		# host galaxy
-		freq_host = freq_em/(1+z)
+		freq_host = freq_em/(1.+z)
 		freq_host_err = (z_err/z)*freq_host
 	
-		SdV = 3.*rms*100.		# 3*sigma flux in mJy km/s (FWHM=100 km/s)
+		SdV = 3.*rms*100.				# 3*sigma flux estimate in mJy km/s (assuming FWHM=100 km/s)
 	
-		print('SdV = %.2f mJy.km/s' %SdV)	
+		print('SdV = %.2f mJy km/s' %SdV)	
 		print('Frequency of host galaxy (from systemic z) = %.2f +/- %.2f GHz' 
 			%(freq_host, freq_host_err))
 	
 		M_H2 = self.get_mass(z, z_err, SdV, 0., freq_o, freq_o_err)	# H_2 mass in solar masses
-	
+
 		[SFR, err_SFR_upp, err_SFR_low] = s
 
 		try:

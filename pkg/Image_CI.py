@@ -70,41 +70,11 @@ class Image_CI:
 		Moment-0 map : image
 		
 		"""
-		# Moment-0 map from CASA
-		moment0 = fits.open(self.CI_path+CI_moment0)
-
-		# WCS header
-		hdr = moment0[0].header
-		wcs = WCS(hdr)
-		wcs = wcs.sub(axes=2)
-
-		# Greyscale image of data
-		img_arr = moment0[0].data[0,0,:,:]
-
-		img_arr = np.rot90(img_arr, 1)
-		img_arr = np.flipud(img_arr)
-
-		# Optimise image colour-scale
-		pix = list(chain(*img_arr))
-		pix_rms = np.sqrt(np.mean(np.square(pix)))
-		pix_med = np.median(pix)
-		vmax = 2.0*(pix_med + pix_rms) * 1.e3
-		vmin = 0.02*(pix_med - pix_rms) * 1.e3
-
-		# Convert from Jy/beam to mJy/beam
-		img_arr = img_arr[:,:]
-		N1,N2 = img_arr.shape[0], img_arr.shape[1]
-		img_arr = [[ img_arr[i][j]*1.e3 for i in range(N1) ] for j in range(N2)]
+		[img_arr, wcs, hdr] = self.process_mom0(CI_moment0)
 
 		# Save moment-0 map with colourbar
 		fig = pl.figure(figsize=(7,5))
 		ax = fig.add_axes([0.02, 0.11, 0.95, 0.85], projection=wcs)
-
-		# Add contours
-		[CI_data, CI_wcs, ci_contours] = self.CI_contours(self.CI_path, CI_moment0, CI_rms)
-
-		ax.contour(img_arr, levels=ci_contours*1.e3, colors='blue',
-		 label='[CI](1-0)', zorder=-5, alpha=0.4, lw=0.2)
 
 		# Annotate regions
 		regions = [ self.input_dir+i for i in regions]
@@ -120,9 +90,9 @@ class Image_CI:
 				ax.add_artist(t)
 
 		# Add clean/synthesised beam
-		pix_deg = abs(hdr['cdelt1'])							# degrees per pixel
-		bmaj, bmin, pa = hdr['bmaj'], hdr['bmin'], hdr['bpa']  	# clean beam Parameters
-		ellip = Ellipse( beam_pos, (bmaj/pix_deg), (bmin/pix_deg), (180.-pa),
+		pix_deg = abs(hdr['cdelt1'])			# degrees per pixel
+		bmaj, bmin = hdr['bmaj'], hdr['bmin']  	# clean beam Parameters
+		ellip = Ellipse( beam_pos, (bmaj/pix_deg), (bmin/pix_deg), 0.,
 		fc='yellow', ec='black' )
 		ax.add_artist(ellip)
 
@@ -135,7 +105,19 @@ class Image_CI:
 		ra 	= ax.coords[0]
 		ra.set_major_formatter('hh:mm:ss.s')
 
-		CI_map = ax.imshow(img_arr, origin='lower', cmap='gray_r', 
+		# Add contours
+		[CI_data, CI_wcs, ci_contours] = self.CI_contours(self.CI_path, CI_moment0, CI_rms)
+
+		ax.contour(img_arr, levels=ci_contours*1.e3, colors='white',
+		 label='[CI](1-0)', zorder=-5, alpha=0.6, lw=0.2)
+
+		# Optimise image colour-scale of host galaxy
+		pix = list(chain(*img_arr))
+		pix_rms = np.sqrt(np.mean(np.square(pix)))
+		pix_med = np.median(pix)
+		vmax = 1.5*(pix_med + pix_rms) 
+		vmin = 0.1*(pix_med - pix_rms) 
+		CI_map = ax.imshow(img_arr, origin='lower', cmap='viridis_r', 
 			vmin=vmin, vmax=vmax, zorder=-10)
 
 		ax.set_xlabel(r'$\alpha$ (J2000)', size=14)
@@ -147,30 +129,54 @@ class Image_CI:
 
 		#draw MW image boundaries 
 		if (source=='4C03' or source=='MRC0943'):
-			hst = Rectangle((10,10), 30, 30, fill=0, color='#3b0a05', lw=2)
+			hst = Rectangle((10,10), 30, 30, fill=0, color='k', lw=2)
 			ax.add_artist(hst)
-			ax.text(10, 8, 'HST FOV', c='#3b0a05', fontsize=12)
+			ax.text(10, 8, 'HST FOV', c='k', fontsize=12,fontweight='bold')
 
 			if source=='4C03':
-				muse = Rectangle((15,15), 17, 17, fill=0, color='#57f542', lw=2)
+				muse = Rectangle((15,15), 17, 17, fill=0, color='k', lw=2)
 				ax.add_artist(muse)
-				ax.text(15, 13, 'MUSE FOV', c='#57f542', fontsize=12)
+				ax.text(15, 13, 'MUSE FOV', c='k', fontsize=12,fontweight='bold')
 
 			elif source=='MRC0943': 
-				muse = Rectangle((12,12), 26, 26, fill=0, color='#57f542', lw=2)
+				muse = Rectangle((12,12), 26, 26, fill=0, color='k', lw=2)
 				ax.add_artist(muse)
-				ax.text(12, 10, 'MUSE FOV', c='#57f542', fontsize=12)
+				ax.text(12, 10, 'MUSE FOV', c='k', fontsize=12, fontweight='bold')
+
+		elif source=='4C04':
+			ax.text(18, 19, 'Host Galaxy', c='red', fontsize=14)
+			ax.text(23, 28, 'NW', c='red', fontsize=14)
 
 		else: 
-			irac = Rectangle((10,10), 30, 30, fill=0, color='#3b0a05', lw=2)
+			irac = Rectangle((10,10), 30, 30, fill=0, color='k', lw=2)
 			ax.add_artist(irac)
-			ax.text(10, 8,'IRAC FOV', c='#3b0a05', fontsize=12)
+			ax.text(10, 8,'IRAC FOV', c='k', fontsize=12,fontweight='bold')
 
-			muse = Rectangle((15,15), 20, 20, fill=0, color='#57f542', lw=2)
+			muse = Rectangle((15,15), 20, 20, fill=0, color='k', lw=2)
 			ax.add_artist(muse)
-			ax.text(15,13,'MUSE FOV', c='#57f542', fontsize=12)
+			ax.text(15,13,'MUSE FOV', c='k', fontsize=12,fontweight='bold')
 
 		return pl.savefig(self.output_dir+source+'_CI_moment0.png')
+
+	def process_mom0( self, CI_moment0 ): 
+		# Moment-0 map from CASA
+		moment0 = fits.open(self.CI_path+CI_moment0)
+
+		# WCS header
+		hdr = moment0[0].header
+		wcs = WCS(hdr)
+		wcs = wcs.sub(axes=2)
+
+		# Get correct orientation of data
+		img_arr = moment0[0].data[0,0,:,:]
+		img_arr = np.rot90(img_arr, 1)
+		img_arr = np.flipud(img_arr)
+
+		# Convert from Jy/beam to mJy/beam
+		img_arr = img_arr[:,:]
+		N1,N2 = img_arr.shape[0], img_arr.shape[1]
+		img_arr = [[ img_arr[i][j]*1.e3 for i in range(N1) ] for j in range(N2)]
+		return [img_arr, wcs, hdr]
 
 	def get_mass( self, z, z_err, SdV, SdV_err, nu_obs, nu_obs_err ):
 		"""
@@ -198,7 +204,7 @@ class Image_CI:
 		Dl = (Distance(z=z, unit=u.Mpc, cosmology=Planck15)).value
 		X_CI = 3.e-5
 		A_10 = 7.93e-8
-		Q_10 = 0.5
+		Q_10 = 0.48
 
 		L_CI = 3.25e7*SdV*1.e-3*Dl**2/(nu_obs**2*(1+z)**3)  # L' in K km/s pc^2
 		L_CI_err = L_CI*np.sqrt( (SdV_err/SdV)**2 + (nu_obs_err/nu_obs)**2 )
@@ -306,7 +312,7 @@ class Image_CI:
 		freq_host = freq_em/(1.+z)
 		freq_host_err = (z_err/z)*freq_host
 	
-		SdV = 3.*rms*100.				# 3*sigma flux estimate in mJy km/s (assuming FWHM=100 km/s)
+		SdV = 3.*rms*np.sqrt(10 * 50)				# 3*sigma flux estimate in mJy km/s (assuming FWHM=100 km/s)
 	
 		print('SdV = %.2f mJy km/s' %SdV)	
 		print('Frequency of host galaxy (from systemic z) = %.2f +/- %.2f GHz' 
@@ -362,4 +368,3 @@ class Image_CI:
 			n			+= 1
 	
 		return [ CI_img_arr, CI_new_wcs, contours ]
-

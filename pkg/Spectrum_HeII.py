@@ -93,9 +93,10 @@ class Spectrum_HeII:
 		
 		m1,m2 	= muse_cube.sum(axis=(1,2)).wave.pixel([lam1,lam2], nearest=True) 
 		muse_cube = muse_cube[ m1:m2, :, : ]
-		sub = muse_cube.subcube_circle_aperture( (dec, ra), size, 	unit_center=None, unit_radius=None )
+		sub = muse_cube.subcube_circle_aperture( (dec, ra), size, unit_center=None, 
+			unit_radius=None )
 		
-		fig = pl.figure(figsize=(7,5))
+		fig = pl.figure(figsize=(7.5,6))
 
 		if p[0] == 8380.:
 			fig.add_axes([0.12, 0.12, 0.85, 0.85])

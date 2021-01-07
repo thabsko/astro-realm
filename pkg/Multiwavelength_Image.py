@@ -210,9 +210,9 @@ class Multiwavelength_Image:
 		
 		l = 12
 
-		ax.text(l, l+1, '10 kpc', color='red', fontsize=10, 
+		ax.text(l, l+dl, '10 kpc', color='red', fontsize=5, 
 			bbox={'facecolor':'white', 'alpha':0.7, 'pad':10}, zorder=5)
-		ax.plot([l, l+dl], [l+0.5, l+0.5], c='red', lw='2', zorder=10.)
+		ax.plot([l, l+dl], [l+1, l+1], c='red', lw='2', zorder=10.)
 
 		for tick in ax.xaxis.get_major_ticks():
 			tick.label.set_fontsize('14')
@@ -223,7 +223,7 @@ class Multiwavelength_Image:
 		return pl.savefig(self.output_dir+source+'_hst_CI_VLA_img.png')
 	
 	def irac_vla_CI( self, vla_path, vla_img, vla_rms, CI_path, CI_moment0, CI_rms,
-		irac_path, irac_img, source, l, dl, irac_vmin ):
+		irac_path, irac_img, source, l, dl, irac_vmin, N ):
 		"""
 		
 		Visualise IRAC narrow-band image with ALMA [CI] and 
@@ -291,8 +291,8 @@ class Multiwavelength_Image:
 		pix = [ x for x in pix if str(x) != 'nan' ]
 		pix_rms = np.sqrt(np.mean(np.square(pix)))
 		pix_med = np.median(pix)
-		vmax = (pix_med + pix_rms) 
-		vmin = (pix_med - pix_rms)/irac_vmin
+		vmax = (pix_med + N*pix_rms) 
+		vmin = irac_vmin
 
 		irac_fig = ax.imshow(irac_data, transform=ax.get_transform(irac_wcs), origin='lower', 
 			interpolation='nearest', vmin=vmin, vmax=vmax, cmap='gist_gray_r')
@@ -304,9 +304,11 @@ class Multiwavelength_Image:
 		ra = ax.coords[0]
 		ra.set_major_formatter('hh:mm:ss.s')
 
-		ax.text(l, l+1.5, '  10 kpc  ', color='red', fontsize=10, 
-			bbox={'facecolor':'white', 'alpha':0.7, 'pad':10}, zorder=5)
-		ax.plot([l, l+dl], [l+1, l+1], c='red', lw='2', zorder=10.)
+		ax.text(l, l, '10 kpc', color='red', fontsize=8, 
+			bbox={'facecolor':'white', 'alpha':0.7, 'pad':10}, zorder=5, ha='center')
+		m = l - 1.0
+		n = l - 0.5
+		ax.plot([m, m+dl], [n, n], c='red', lw='2', zorder=10.)
 
 		for tick in ax.xaxis.get_major_ticks():
 			tick.label.set_fontsize('14')
@@ -380,6 +382,7 @@ class Multiwavelength_Image:
 		muse_img.write(self.output_dir+Lya_img+'_'+str(int(lam1))+'_'+str(int(lam2))+'.fits')		#save to create new WCS		
 
 		muse_hdu = fits.open(self.output_dir+Lya_img+'_'+str(int(lam1))+'_'+str(int(lam2))+'.fits')	#open saved narrow-band image
+
 		muse_hdr = muse_hdu[1].header
 		muse_wcs = WCS(muse_hdr).celestial
 
@@ -415,15 +418,15 @@ class Multiwavelength_Image:
 		ax1.set_xlim(l1,l2)
 		ax1.set_ylim(l1,l2)
 
-		if Lya_img == 'MRC0943_Lya_img': 
-			ax1.text( l1+1.5, l1+2,'10 kpc', color='red', fontsize=10, 
-				bbox={'facecolor':'white', 'alpha':0.7, 'pad':10}, zorder=5, transform=ax1.get_transform(CI_wcs))
-			ax1.plot( [l1+1.5, l1+1.5+dl], [l1+1.5, l1+1.5], c='red', lw='2', zorder=10.)
+		# distance scale bar
+		l = l1 + 2.5
 
-		else:
-			ax1.text( l1+1.5, l1+2,'     10 kpc     ', color='red', fontsize=10, 
-				bbox={'facecolor':'white', 'alpha':0.7, 'pad':10}, zorder=5, transform=ax1.get_transform(CI_wcs))
-			ax1.plot( [l1+1.25, l1+1.25+dl], [l1+1.75, l1+1.75], c='red', lw='2', zorder=10.)
+		ax1.text( l, l,'10 kpc', color='red', fontsize=8, 
+			bbox={'facecolor':'white', 'alpha':0.7, 'pad':15}, zorder=5, 
+			transform=ax1.get_transform(CI_wcs), ha='center')
+		m = l - 0.75
+		n = l - 0.5
+		ax1.plot( [m, m+dl], [n, n], c='red', lw='2', zorder=10.)
 
 
 		ax1.set_xlabel(r'$\alpha$ (J2000)', fontsize=14)
@@ -528,13 +531,15 @@ class Multiwavelength_Image:
 
 		"""
 		hdu = fits.open(self.output_dir+Lya_subcube)
-		hdr = hdu[0].header
+		hdr = hdu[1].header
 
 		ra_offset = muse_std[0] - gaia_std[0]
 		dec_offset = muse_std[1] - gaia_std[1]
 
-		hdr['RA'] = hdr['RA'] + ra_offset
-		hdr['DEC'] = hdr['DEC'] + dec_offset
+		new_ra = hdr['crval1'] - ra_offset
+		new_dec = hdr['crval2'] - dec_offset
+
+		hdr.update(crval1=new_ra, crval2=new_dec)
 
 		hdu.writeto(self.output_dir+Lya_subcube[:-5]+'_astrocorr.fits', 
 			overwrite=1)
